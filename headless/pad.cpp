@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "devices.h"
+#include "shortcut_dispatch.h"
 #include <algorithm>
 #include <cmath>
 #include <numbers>
@@ -296,24 +297,22 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
     for (const auto& raw : samples) {
         auto sample = is_usable(raw) ? raw : neutral_data(raw.timestamp_us);
         // The shortcuts work from every controller.
-        const ButtonMask chord_masks[] = {
+        const std::array<ButtonMask, 6> chord_masks{
             kButtonTouchPad | kButtonL1, kButtonTouchPad | kButtonR1,
             kButtonTouchPad | kButtonOptions, kButtonCreate | kButtonL1,
             kButtonCreate | kButtonR1, kButtonCreate | kButtonOptions};
         const auto pressed = sample.buttons;
-        bool chord_active = false;
-        for (int action = 0; action < 3; ++action) {
-            const ButtonMask chord = chord_masks[shortcuts[action]];
-            if ((pressed & chord) != chord) continue;
-            chord_active = true;
-            if ((last_buttons & chord) != chord) {
-                if (action == 0) return_to_menu = true;
-                else if (action == 1) hud_toggle = true;
+        const auto shortcut = DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
+        if (shortcut.action >= 0) {
+            if (shortcut.activated) {
+                if (shortcut.action == 0) return_to_menu = true;
+                else if (shortcut.action == 1) hud_toggle = true;
                 else pause_cheats = true;
+                LOG_INFO(Input, "EDEN_PAD_SHORTCUT player={} action={} binding={}", player + 1,
+                         shortcut.action, shortcuts[shortcut.action]);
             }
-            sample.buttons &= ~chord; // Neither shortcut button is sent to the guest.
+            sample.buttons &= ~shortcut.consumed;
         }
-        if (chord_active) slot.touch_chord = true;
         // The native in-game cheat dialog owns input while it is open.
         if (cheat_menu_open.load(std::memory_order_relaxed))
             sample.buttons = 0;
@@ -324,7 +323,10 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
             slot.touch_chord = false;
             slot.touch_polls = 0;
         }
-        if (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonOptions)) != 0) {
+        // Reset the touch state first, then mark an active chord. Previously the
+        // reset above erased the chord flag when both buttons arrived together,
+        // creating an unintended game Minus/Touchpad pulse on release.
+        if (shortcut.action >= 0 || (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonOptions)) != 0)) {
             slot.touch_chord = true;
             slot.select_held = false;
         }
