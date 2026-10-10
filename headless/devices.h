@@ -74,7 +74,8 @@ public:
     bool TakeReturnToMenu() { return return_to_menu.exchange(false); }
     bool TakeHudToggle() { return hud_toggle.exchange(false); }
     bool TakePauseCheats() { return pause_cheats.exchange(false); }
-    void SetShortcuts(const std::array<int, 3>& value) {
+    bool TakeGraphicsMenu() { return graphics_menu.exchange(false); }
+    void SetShortcuts(const std::array<int, 4>& value) {
         shortcuts = ValidShortcuts(value) ? value : kDefaultShortcuts;
     }
     void SetCheatMenuOpen(bool opened) { cheat_menu_open.store(opened, std::memory_order_relaxed); }
@@ -114,7 +115,7 @@ private:
     float deadzone;
     float trigger_threshold;
     ButtonMapping mapping = kDefaultMapping;
-    std::array<int, 3> shortcuts = kDefaultShortcuts;
+    std::array<int, 4> shortcuts = kDefaultShortcuts;
     std::atomic<bool> cheat_menu_open{false};
     std::array<Slot, kMaxPlayers> slots{};
     std::array<std::atomic<Grip>, kMaxPlayers> grips{};
@@ -122,6 +123,7 @@ private:
     std::atomic<bool> return_to_menu = false;
     std::atomic<bool> hud_toggle = false;
     std::atomic<bool> pause_cheats = false;
+    std::atomic<bool> graphics_menu = false;
     std::atomic<unsigned> connected_players = 0;
     std::atomic<unsigned> connection_changes = 0;
     unsigned polls_since_scan = 0;
