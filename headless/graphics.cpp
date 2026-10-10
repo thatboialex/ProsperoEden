@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "performance.h"
+#include "game_compatibility.h"
 #include "assets_dir.h"
 #include <glad/glad.h>
 #include <EGL/egl.h>
@@ -657,6 +658,22 @@ void GraphicsWindow::OnFrameDisplayed() {
                 interval_hist = {};
 #endif
                 Eden::Performance::ReportVulkan();
+#ifdef PS5_NATIVE
+                // Always-on but low-rate memory telemetry for the reported RMX OOM.
+                // Keep this on the GPU's existing 5-second report cadence. A falling
+                // free_block_mib across gameplay or between sessions distinguishes
+                // persistent allocations from a single high-resolution peak.
+                if (Eden::session_title.load(std::memory_order_relaxed) == Eden::Compatibility::kFastRmx) {
+                    const auto free_probe = Eden::Performance::graphics_memory_free.load(
+                        std::memory_order_relaxed);
+                    const auto free_bytes = free_probe ? free_probe() : 0ULL;
+                    std::printf("EDEN_RMX_MEMORY frame=%u free_block_mib=%llu probe=%d short=%d "
+                                "keep_dirty=%d\n", frame_total,
+                                static_cast<unsigned long long>(free_bytes >> 20), int(free_probe != nullptr),
+                                int(Eden::Performance::graphics_memory_short.load(std::memory_order_relaxed)),
+                                int(Eden::Performance::gc_keep_dirty.load(std::memory_order_relaxed)));
+                }
+#endif
 #ifdef EDEN_DEV_PROFILE
                 // Composite runs on the GPU thread, so its owner CPU clock is valid here.
                 Eden::Performance::ReportGpuThread(frame_total);
