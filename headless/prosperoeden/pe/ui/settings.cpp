@@ -447,6 +447,14 @@ void Launcher::press_dialog(Key key)
     const int step = key == Key::left ? -1 : 1;
     if (key == Key::circle)
     {
+        if (modal_ == Modal::controls && controls_from_game_) {
+            controls_from_game_ = false;
+            modal_ = modal_shown_ = Modal::game_options;
+            option_ = option_rows_.selected;
+            message_.clear();
+            cue(Cue::back);
+            return;
+        }
         close_modal();
         return;
     }
