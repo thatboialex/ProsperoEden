@@ -75,3 +75,24 @@ this per-game mitigation.
 cause pauses and may not avoid memory fragmentation, CPU heap exhaustion,
 or leaked allocations from the driver or emulator. It also does not
 automatically retry a failed game or change system memory limits.
+
+## Live-test feedback: Vulkan out of device memory at 1x/1080p
+
+A console run of this mitigation still failed on a Vulkan CreateImage request
+(`VK_ERROR_OUT_OF_DEVICE_MEMORY`, VkResult=-2) after about 102 seconds.
+The texture cache reported 4.22 billion bytes against a 3.44-billion-byte
+critical mark, while the largest free direct-memory block transiently fell to
+272 MiB. Therefore the 1x/1080p limit by itself is not sufficient.
+
+The **second experimental pass** enables an RMX-specific adaptive GC:
+when the largest free direct-memory block drops below 1 GiB, the GC enters
+its higher-priority mode even below its standard usage mark; an aggressive
+pass checks up to 96 old images (versus Eden's default 40). It also begins
+normal eviction earlier to leave more room for image allocations. This is
+opt-in only for this title and respects the existing `fast_rmx=off` switch.
+It can increase shader/texture stalls and is not yet validated on PS5.
+
+In addition to checking this Vulkan failure, compare performance at 0.75x
+and 1x. For initial reliability testing switch OFF **Unsafe CPU**, **Unsafe DMA**,
+and **Skip invalidation** under Performance. The attached log had all three on;
+that does not establish them as the cause of this memory error.
