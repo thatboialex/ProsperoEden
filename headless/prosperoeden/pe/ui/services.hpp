@@ -311,6 +311,7 @@ struct Preferences
     bool reactive_flushing = true;  // off is faster; some effects break
     bool skip_invalidation = false; // fewer invalidations of what the GPU caches hold
     ButtonMapping mapping = kDefaultMapping; // Settings > Controls > Button mapping
+    std::array<int, 4> shortcuts{0, 1, 2, 5}; // library, FPS, pause/cheats, graphics
 };
 
 // What one game does differently from Settings (Library > Game settings). Each value is -1 while

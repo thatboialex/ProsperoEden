@@ -17,6 +17,10 @@ name: Release build
 # about ten minutes; one without them compiles everything on four cores and takes about an hour.
 # Should a build ever reach the build step's limit (315 minutes), ccache is still saved: running
 # the workflow again continues from there.
+# GitHub drops a cache nobody used for a week, and a pull request only sees the caches of main.
+# So ccache has a second source: a snapshot kept as a file of the `build-cache` release, which
+# any run downloads when it finds no ccache. A manual run on main with "snapshot" ticked keeps
+# its ccache as an artifact, which build-cache.yml publishes as the new snapshot.
 # The actions are the Node 24 versions, pinned by commit.
 on:
   # A build on main is started by hand (Run workflow): pushes to main build nothing.
@@ -24,6 +28,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      snapshot:
+        description: "Also publish this run's ccache as the build-cache snapshot (run it on main)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -129,11 +138,45 @@ jobs:
           key: radv-3-${{ hashFiles('tools/deps.json', 'tools/patch-radv-wsi.py', 'tools/build-radv-dependencies.sh', 'tools/isolate-radv.py', 'tools/ci/ubuntu-24.04-packages.txt', 'tools/ci/setup-ubuntu-24.04.sh') }}
 
       - name: Restore ccache
+        id: ccache
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ${{ env.CACHE_ROOT }}/ccache
           key: ccache-u24-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: ccache-u24-
+
+      # No ccache from GitHub's cache (expired, or none on main yet): start from the snapshot.
+      # The file's name carries the cache key's prefix, so a new toolchain starts a new file.
+      - name: Fetch the ccache snapshot
+        if: steps.ccache.outputs.cache-matched-key == ''
+        run: |
+          url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/build-cache/ccache-u24.tar"
+          if curl -fsSL --retry 3 -o "$RUNNER_TEMP/ccache-u24.tar" "$url"; then
+            mkdir -p "$CCACHE_DIR"
+            tar -xf "$RUNNER_TEMP/ccache-u24.tar" -C "$CCACHE_DIR"
+            rm "$RUNNER_TEMP/ccache-u24.tar"
+            echo "::notice title=ccache::Started from the build-cache snapshot ($(du -sh "$CCACHE_DIR" | cut -f1))."
+          else
+            echo "::notice title=ccache::No snapshot to start from; this run compiles everything."
+          fi
+
+      - name: Check compatibility policies
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Werror headless/game_compatibility_check.cpp -o /tmp/eden-game-compatibility-check
+          /tmp/eden-game-compatibility-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/shortcut_chords_check.cpp -o /tmp/eden-shortcut-chords-check
+          /tmp/eden-shortcut-chords-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/controls_menu_check.cpp -o /tmp/eden-controls-menu-check
+          /tmp/eden-controls-menu-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/shortcut_dispatch_check.cpp -o /tmp/eden-shortcut-dispatch-check
+          /tmp/eden-shortcut-dispatch-check
+          python3 tools/check-shortcut-ui-wiring.py
+          c++ -std=c++20 -Wall -Wextra -Werror headless/cheat_text_check.cpp -o /tmp/eden-cheat-text-check
+          /tmp/eden-cheat-text-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/cheat_runtime_check.cpp -o /tmp/eden-cheat-runtime-check
+          /tmp/eden-cheat-runtime-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/fast_rmx_gc_check.cpp -o /tmp/eden-fast-rmx-gc-check
+          /tmp/eden-fast-rmx-gc-check
 
       - name: Build and package
         id: build
@@ -157,6 +200,19 @@ jobs:
         with:
           path: ${{ env.CACHE_ROOT }}/ccache
           key: ccache-u24-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # ccache compresses what it stores, so the snapshot is a plain tar.
+      - name: Pack the ccache snapshot
+        if: github.event_name == 'workflow_dispatch' && inputs.snapshot && steps.build.outcome == 'success'
+        run: tar -cf "$RUNNER_TEMP/ccache-u24.tar" -C "$CCACHE_DIR" .
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: github.event_name == 'workflow_dispatch' && inputs.snapshot && steps.build.outcome == 'success'
+        with:
+          name: ccache-snapshot
+          path: ${{ runner.temp }}/ccache-u24.tar
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Save the RADV driver
         if: always() && steps.radv.outputs.cache-hit != 'true' && hashFiles('build/radv-isolated/libvulkan_radeon.ps5.a') != ''

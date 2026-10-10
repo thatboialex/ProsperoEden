@@ -12,6 +12,7 @@
 #include "input_common/drivers/virtual_gamepad.h"
 #include "input_common/input_engine.h"
 #include "button_mapping.h"
+#include "shortcut_chords.h"
 #include "ps5_pad.hpp"
 
 namespace Eden {
@@ -72,6 +73,12 @@ public:
     bool Poll();
     bool TakeReturnToMenu() { return return_to_menu.exchange(false); }
     bool TakeHudToggle() { return hud_toggle.exchange(false); }
+    bool TakePauseCheats() { return pause_cheats.exchange(false); }
+    bool TakeGraphicsMenu() { return graphics_menu.exchange(false); }
+    void SetShortcuts(const std::array<int, 4>& value) {
+        shortcuts = ValidShortcuts(value) ? value : kDefaultShortcuts;
+    }
+    void SetCheatMenuOpen(bool opened) { cheat_menu_open.store(opened, std::memory_order_relaxed); }
     // Players with a controller (bit per player), and those whose controller came or went.
     unsigned ConnectedPlayers() const { return connected_players.load(); }
     unsigned TakeConnectionChanges() { return connection_changes.exchange(0); }
@@ -108,11 +115,15 @@ private:
     float deadzone;
     float trigger_threshold;
     ButtonMapping mapping = kDefaultMapping;
+    std::array<int, 4> shortcuts = kDefaultShortcuts;
+    std::atomic<bool> cheat_menu_open{false};
     std::array<Slot, kMaxPlayers> slots{};
     std::array<std::atomic<Grip>, kMaxPlayers> grips{};
     bool owns_user_service = false;
     std::atomic<bool> return_to_menu = false;
     std::atomic<bool> hud_toggle = false;
+    std::atomic<bool> pause_cheats = false;
+    std::atomic<bool> graphics_menu = false;
     std::atomic<unsigned> connected_players = 0;
     std::atomic<unsigned> connection_changes = 0;
     unsigned polls_since_scan = 0;

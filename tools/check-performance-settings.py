@@ -16,8 +16,25 @@ end = main.index('#else', begin)
 release = main[:begin] + main[end:]  # what a release build compiles
 
 assert 'const auto speed = Eden::LoadPerformance(eden_game_title_id(guest));' in release
+# Async shaders still obey the user's setting for ordinary titles. Z-A's
+# optional, Vulkan-only smoothness profile may additionally switch them on.
+# Check both the actual setting expression and the scoped/reversible policy;
+# this used to assert the old one-line assignment and reject a valid build.
+import re
+
+shader_assignment = re.search(
+    r'Settings::values\.use_asynchronous_shaders\s*=\s*'
+    r'speed\.async_shaders\s*\|\|\s*za_perf_profile\.asynchronous_shaders\s*;',
+    release,
+)
+assert shader_assignment, "Release must apply user shader preference and Z-A profile"
+assert 'Eden::Compatibility::ForPokemonZAPerformance(' in release
+assert 'backend == Eden::GraphicsBackend::Vulkan, pokemon_za_perf' in release
+assert 'pokemon_za_perf=off' in release
+policy = (root / 'headless/game_compatibility.h').read_text()
+assert 'title_id == kPokemonLegendsZA' in policy
+assert 'const bool active = enabled && use_vulkan && title_id == kPokemonLegendsZA;' in policy
 for statement in (
-    'Settings::values.use_asynchronous_shaders = speed.async_shaders;',
     'Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);',
     'Settings::values.current_gpu_accuracy = Settings::GpuAccuracy::Low;',
     'Settings::values.cpu_accuracy = Settings::CpuAccuracy::Unsafe;',

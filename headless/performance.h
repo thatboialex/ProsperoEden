@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <optional>
+#include "fast_rmx_gc.h"
 #include "common/cpu_features.h"
 
 namespace Eden::Performance {
@@ -99,6 +100,8 @@ inline long long NowNs() { return Common::g_wall_clock.GetTimeNS().count(); }
 // direct memory (what the next allocation needs) is under kShortMemory.
 // dev-settings gc_dirty=upstream restores Eden's rule.
 inline std::atomic<bool> gc_keep_dirty{true};
+// Emergency texture reclamation is opt-in per game; no other title changes behavior.
+inline std::atomic<bool> fast_rmx_gc{false};
 inline std::atomic<bool> graphics_memory_short{false};
 inline constexpr std::size_t kShortMemory = std::size_t{384} << 20;
 // Development: the texture cache reports its memory use and marks every 300 frames.

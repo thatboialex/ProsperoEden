@@ -901,6 +901,15 @@ endforeach()
 string(REPLACE "    u64 program_id;\n\n" "" system_source "${system_source}")
 string(REPLACE "        if (app_loader->ReadProgramId(program_id) != Loader::ResultStatus::Success) {\n            LOG_ERROR(Core, \"Failed to find program id for ROM\");\n        }\n\n" "" system_source "${system_source}")
 string(REPLACE "GameSettings::LoadOverrides(program_id," "GameSettings::LoadOverrides(params.program_id," system_source "${system_source}")
+# Allow the paused frontend to replace the loaded cheat program, without
+# destroying/reinitializing the looping cheat engine or its timing event.
+set(old_live_reload "    impl->cheat_engine.emplace(*this, list, build_id);")
+set(new_live_reload "    if (impl->cheat_engine && IsPaused()) {\n        impl->cheat_engine->Reload(list);\n        return;\n    }\n    impl->cheat_engine.emplace(*this, list, build_id);")
+string(FIND "${system_source}" "${old_live_reload}" live_reload_at)
+if(live_reload_at LESS 0)
+    message(FATAL_ERROR "Pinned cheat list registration changed; review safe live reload")
+endif()
+string(REPLACE "${old_live_reload}" "${new_live_reload}" system_source "${system_source}")
 # Join callbacks before their service-owned targets can be destroyed.
 set(old_audio_shutdown "        stop_event.request_stop();")
 string(FIND "${system_source}" "${old_audio_shutdown}" audio_shutdown_offset)
@@ -1002,6 +1011,7 @@ if(PS5_NATIVE)
     set(old_nso_cheats [=[        if (!cheats.empty()) {
             system.RegisterCheatList(cheats, nso_header.build_id, load_base, image_size);]=])
     set(new_nso_cheats [=[        if (name == "main") {
+            Eden::Cheats::KeepMain(); // snapshot the unfiltered main-module cheats
             // The build ID a cheat file for this version of the game is named after.
             char build[17]{};
             for (int i = 0; i < 8; ++i)
@@ -1017,7 +1027,7 @@ if(PS5_NATIVE)
         message(FATAL_ERROR "Pinned NSO cheat registration changed")
     endif()
     string(REPLACE "${old_nso_cheats}" "${new_nso_cheats}" nso_source "${nso_source}")
-    string(PREPEND nso_source "#include <cstdio>\n")
+    string(PREPEND nso_source "#include <cstdio>\n#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
     write_derived("${PORT_BUILD_DIR}/nso.cpp" "${nso_source}")
     list(REMOVE_ITEM core_sources loader/nso.cpp)
     list(APPEND core_sources "${PORT_BUILD_DIR}/nso.cpp")
@@ -1047,6 +1057,66 @@ function(eden_patch source old new)
     string(REPLACE "${old}" "${new}" patched "${${source}}")
     set(${source} "${patched}" PARENT_SCOPE)
 endfunction()
+
+# Registering cheats is not proof that their pointer chains write guest memory.
+# Collect only periodic VM totals; never print a line for each memory opcode.
+file(READ "${PROJECT_SOURCE_DIR}/src/core/memory/cheat_engine.cpp" cheat_runtime_source)
+eden_patch(cheat_runtime_source
+    "        std::memset(data, 0, size);\n        return;"
+    "        Eden::CheatRuntime::Read(false, address);\n        std::memset(data, 0, size);\n        return;")
+eden_patch(cheat_runtime_source
+    "    process->GetMemory().ReadBlock(address, data, size);"
+    "    // A mapped address is not proof of a successful read: partial or failed\n    // reads must not feed stale pointer bytes into the next cheat opcode.\n    const bool succeeded = process->GetMemory().ReadBlock(address, data, size);\n    Eden::CheatRuntime::Read(succeeded, address);\n    if (!succeeded) std::memset(data, 0, size);")
+eden_patch(cheat_runtime_source
+    "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        return;\n    }"
+    "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        Eden::CheatRuntime::Write(false, false, address);\n        return;\n    }")
+eden_patch(cheat_runtime_source
+    "    if (process->GetMemory().WriteBlock(address, data, size)) {\n        Core::InvalidateInstructionCacheRange(process, address, size);\n    }"
+    "    const bool succeeded = process->GetMemory().WriteBlock(address, data, size);\n    Eden::CheatRuntime::Write(true, succeeded, address);\n    if (succeeded) {\n        Core::InvalidateInstructionCacheRange(process, address, size);\n    }")
+eden_patch(cheat_runtime_source
+    "void CheatEngine::Initialize() {"
+    "void CheatEngine::Initialize() {\n    Eden::CheatRuntime::Reset();")
+set(old_cheat_callback [=[void CheatEngine::FrameCallback(std::chrono::nanoseconds ns_late) {
+    if (is_pending_reload.exchange(false)) {
+        vm.LoadProgram(cheats);
+    }
+
+    if (vm.GetProgramSize() == 0) {
+        return;
+    }
+
+    vm.Execute(metadata);
+}]=])
+set(new_cheat_callback [=[void CheatEngine::FrameCallback(std::chrono::nanoseconds ns_late) {
+    if (is_pending_reload.exchange(false) && !vm.LoadProgram(cheats)) {
+        std::fprintf(stderr, "[ProsperoEden] cheat-vm: opcode limit exceeded; no cheats can execute\n");
+    }
+    if (vm.GetProgramSize() != 0) {
+        vm.Execute(metadata);
+    }
+    const auto tick = Eden::CheatRuntime::frames.fetch_add(1, std::memory_order_relaxed) + 1;
+    if (tick == 1 || tick % 60 == 0) {
+        std::size_t enabled = 0;
+        for (const auto& cheat : cheats)
+            if (cheat.enabled && cheat.definition.num_opcodes != 0) ++enabled;
+        Eden::CheatRuntime::Report(cheats.size(), enabled, vm.GetProgramSize());
+    }
+}]=])
+eden_patch(cheat_runtime_source "${old_cheat_callback}" "${new_cheat_callback}")
+# The old cheat callbacks reject otherwise mapped guest pages unless they
+# happen to lie in four coarse main/heap/alias extents. Switch memory can also
+# place valid cheat targets in other mapped regions. Trust the process page
+# table's range check for the full opcode width instead. An address like 0x10
+# remains rejected, so bad pointer chains never become arbitrary host writes.
+eden_patch(cheat_runtime_source
+    "    if (process == nullptr || !IsAddressInRange(address) ||\n        !process->GetMemory().IsValidVirtualAddress(address)) {"
+    "    if (process == nullptr || size == 0 || address + size < address ||\n        !process->GetMemory().IsValidVirtualAddressRange(address, size)) {")
+string(PREPEND cheat_runtime_source "#include \"${EDEN_PORT_DIR}/cheat_runtime.h\"\n")
+write_derived("${PORT_BUILD_DIR}/cheat_engine_runtime.cpp" "${cheat_runtime_source}")
+get_target_property(core_sources core SOURCES)
+list(REMOVE_ITEM core_sources memory/cheat_engine.cpp)
+list(APPEND core_sources "${PORT_BUILD_DIR}/cheat_engine_runtime.cpp")
+set_property(TARGET core PROPERTY SOURCES "${core_sources}")
 
 # Mods (headless/mods.h). The pinned patch code cannot apply an .ips patch (it looks for the
 # patch's magic in the game's code, and its end marker test never passes) and writes zeros for
@@ -1150,13 +1220,21 @@ eden_patch(patch_source
     "const auto this_build_id = fmt::format(\"{:0<64}\", Common::ToUpper(name.substr(0, name.find('.'))));")
 # A game without a mods folder is the usual case here, not an error to log for each of its modules.
 eden_patch(patch_source "        LOG_ERROR(Loader, \"Cannot load mods for invalid title_id={:016X}\", title_id);\n" "")
+# Collect each module independently so the main-module snapshot doesn't pick up
+# sdk/rtld cheats, or stale entries from another game.
+eden_patch(patch_source
+    "    std::vector<Core::Memory::CheatEntry> out;\n    for (const auto& subdir : patch_dirs) {"
+    "    Eden::Cheats::BeginCollection();\n    std::vector<Core::Memory::CheatEntry> out;\n    for (const auto& subdir : patch_dirs) {")
 # Cheats chosen one by one (headless/cheats.h): each mod's cheat list, from its folder or from a
 # loose cheat file, goes into the game's with the cheats that were not chosen switched off.
 eden_patch(patch_source "std::copy(res->begin(), res->end(), std::back_inserter(out));"
     "Eden::Cheats::Append(out, *res, subdir->GetName());")
 eden_patch(patch_source "std::copy(res.begin(), res.end(), std::back_inserter(out));"
     "Eden::Cheats::Append(out, res, name);")
-string(PREPEND patch_source "#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
+eden_patch(patch_source
+    "parser.Parse(std::string_view(reinterpret_cast<const char*>(data.data()), data.size()))"
+    "parser.Parse(Eden::Cheats::NormalizeText(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())))")
+string(PREPEND patch_source "#include \"${EDEN_PORT_DIR}/cheat_text.h\"\n#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
 write_derived("${PORT_BUILD_DIR}/patch_manager.cpp" "${patch_source}")
 get_target_property(core_sources core SOURCES)
 list(REMOVE_ITEM core_sources file_sys/ips_layer.cpp file_sys/patch_manager.cpp)
@@ -2196,6 +2274,13 @@ else()
     # So is the check of the cheat files' entries (patch_library.h).
     add_executable(eden-patch-library-check "${EDEN_PORT_DIR}/patch_library_check.cpp")
     target_compile_options(eden-patch-library-check PRIVATE -UNDEBUG)
+    # PS5 Vulkan per-title workaround stays scoped to Z-A (game_compatibility.h).
+    add_executable(eden-cheat-runtime-check "${EDEN_PORT_DIR}/cheat_runtime_check.cpp")
+    target_compile_options(eden-cheat-runtime-check PRIVATE -UNDEBUG)
+    add_executable(eden-game-compatibility-check "${EDEN_PORT_DIR}/game_compatibility_check.cpp")
+    target_compile_options(eden-game-compatibility-check PRIVATE -UNDEBUG)
+    add_executable(eden-fast-rmx-gc-check "${EDEN_PORT_DIR}/fast_rmx_gc_check.cpp")
+    target_compile_options(eden-fast-rmx-gc-check PRIVATE -UNDEBUG)
     add_executable(eden-devices-check "${EDEN_PORT_DIR}/devices_check.cpp")
     target_link_libraries(eden-devices-check PRIVATE core eden-pad eden-device-mock)
     target_compile_options(eden-devices-check PRIVATE -fno-rtti)
@@ -2212,6 +2297,10 @@ else()
         "${EDEN_PORT_DIR}/update_check_check.cpp" "${EDEN_PORT_DIR}/update_check/update_check.c")
     target_compile_definitions(eden-update-check PRIVATE UPDATE_CHECK_NO_NETWORK=1)
     target_compile_options(eden-update-check PRIVATE -UNDEBUG)
+    # The self-update helper keeps the version it replaces: moving it to where it is kept.
+    add_executable(eden-update-files-check
+        "${EDEN_PORT_DIR}/self_update_files_check.cpp" "${EDEN_PORT_DIR}/self_update_helper/files.cpp")
+    target_include_directories(eden-update-files-check PRIVATE "${EDEN_PORT_DIR}")
 endif()
 target_include_directories(eden-headless PRIVATE "${PROJECT_SOURCE_DIR}/src")
 # The app version has one home, sce_sys/param.json (contentVersion), which the package carries as

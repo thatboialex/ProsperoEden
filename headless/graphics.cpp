@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "performance.h"
+#include "game_compatibility.h"
 #include "assets_dir.h"
 #include <glad/glad.h>
 #include <EGL/egl.h>
@@ -48,6 +49,9 @@ double LoadingCalm() {
 }
 std::atomic<bool> hud_enabled{true};
 HudClock vulkan_hud_clock;
+// What the display is actually given: the guest's frames plus the ones frame generation
+// adds (CountPresentedFrame(), hud.h).
+HudClock vulkan_hud_output_clock;
 HudSnapshot vulkan_hud;
 double vulkan_hud_stats_time{}, vulkan_hud_speed{};
 bool vulkan_loading{};
@@ -522,6 +526,7 @@ GraphicsWindow::GraphicsWindow(bool use_vulkan) : vulkan(use_vulkan) {
 #ifdef EDEN_PS5_VULKAN
     if (vulkan) {
         vulkan_hud_clock = {};
+        vulkan_hud_output_clock = {};
         vulkan_hud = MakeLoadingSnapshot(0);
         vulkan_hud_stats_time = vulkan_hud_speed = 0;
         window_info.type = Core::Frontend::WindowSystemType::PS5;
@@ -610,6 +615,15 @@ GraphicsWindow::~GraphicsWindow() {
     Cleanup(eglTerminate(display), "display");
     std::puts("EDEN_EGL_CLOSED");
 }
+void CountPresentedFrame() {
+    // The renderer calls this for every frame it hands to the present manager, so F in the HUD is
+    // the output rate. Same clock and timestamp as OnFrameDisplayed(); only the count differs.
+    const double now = std::chrono::duration<double>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count();
+    vulkan_hud_output_clock.Present(now);
+}
+
 void GraphicsWindow::OnFrameDisplayed() {
 #ifdef PS5_NATIVE
     if (vulkan) {
@@ -625,7 +639,9 @@ void GraphicsWindow::OnFrameDisplayed() {
             vulkan_hud_speed = system->GetAndResetPerfStats().emulation_speed * 100.0;
             vulkan_hud_stats_time = now;
         }
-        vulkan_hud = MakeHudSnapshot(vulkan_hud_clock, vulkan_hud_speed);
+        vulkan_hud =
+            MakeHudSnapshot(vulkan_hud_clock, vulkan_hud_output_clock, vulkan_hud_speed,
+                            Eden::Display::output_millihertz.load(std::memory_order_relaxed) / 1000.0);
 #endif
         ++frame_total;
         if (frame_sample_start < 0) {
@@ -657,6 +673,22 @@ void GraphicsWindow::OnFrameDisplayed() {
                 interval_hist = {};
 #endif
                 Eden::Performance::ReportVulkan();
+#ifdef PS5_NATIVE
+                // Always-on but low-rate memory telemetry for the reported RMX OOM.
+                // Keep this on the GPU's existing 5-second report cadence. A falling
+                // free_block_mib across gameplay or between sessions distinguishes
+                // persistent allocations from a single high-resolution peak.
+                if (Eden::session_title.load(std::memory_order_relaxed) == Eden::Compatibility::kFastRmx) {
+                    const auto free_probe = Eden::Performance::graphics_memory_free.load(
+                        std::memory_order_relaxed);
+                    const auto free_bytes = free_probe ? free_probe() : 0ULL;
+                    std::printf("EDEN_RMX_MEMORY frame=%u free_block_mib=%llu probe=%d short=%d "
+                                "keep_dirty=%d\n", frame_total,
+                                static_cast<unsigned long long>(free_bytes >> 20), int(free_probe != nullptr),
+                                int(Eden::Performance::graphics_memory_short.load(std::memory_order_relaxed)),
+                                int(Eden::Performance::gc_keep_dirty.load(std::memory_order_relaxed)));
+                }
+#endif
 #ifdef EDEN_DEV_PROFILE
                 // Composite runs on the GPU thread, so its owner CPU clock is valid here.
                 Eden::Performance::ReportGpuThread(frame_total);

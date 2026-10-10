@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "pe/ui/launcher.hpp"
+#include "shortcut_chords.h"
 
 #include <algorithm>
 #include <string>
@@ -41,6 +42,8 @@ constexpr const char *kCategoryNames[] = {TR("Video"), TR("Performance"), TR("Au
 constexpr int kVibrationRow = 0;
 constexpr int kMappingRow = 1;
 constexpr int kControllerRow = 2;
+constexpr int kShortcutRow = 3; // jump to shared shortcut settings
+constexpr int kGraphicsShortcutRow = 4;
 
 // The game's buttons and the DualSense buttons, in the mapping's order (services.hpp). The game's
 // are its own names; the stick presses and the DualSense's named buttons are translated.
@@ -162,6 +165,10 @@ std::vector<Option> options(int category, const GameSettings &game, Preferences 
                         {tr("Pro Controller"), tr("Handheld"), tr("Dual Joy-Cons"), tr("Left Joy-Con"),
                          tr("Right Joy-Con")},
                         game.controller, tr("Automatic")});
+        rows.push_back({tr("Pause / Cheats shortcut"),
+                        {Eden::kShortcutLabels[prefs.shortcuts[2]]}, 0, ""});
+        rows.push_back({tr("Live graphics shortcut"),
+                        {Eden::kShortcutLabels[prefs.shortcuts[3]]}, 0, ""});
         break;
     default:
         rows.push_back({tr("Language"), services.language_labels(), game.language,
@@ -277,6 +284,13 @@ void Launcher::press_game_options(Key key)
     }
     const int row = std::clamp(option_rows_.selected, 0, static_cast<int>(rows.size()) - 1);
     const Option &option = rows[static_cast<std::size_t>(row)];
+    if (game_options_ == category_controls && (row == kShortcutRow || row == kGraphicsShortcutRow)) {
+        if (key == Key::cross) {
+            controls_from_game_ = true;
+            open_modal(Modal::controls);
+        }
+        return;
+    }
     // The game's own mapping is edited in its own list.
     if (game_options_ == category_controls && row == kMappingRow && key == Key::cross && option.value >= 0)
     {
@@ -355,8 +369,9 @@ void Launcher::draw_game_options(Canvas &c, float open)
     list.pop_clip();
     scrollbar(c, option_rows_, 1340.0f, kWindow.y, kWindow.h);
 
-    const bool opens = game_options_ == category_controls && option_rows_.selected == kMappingRow &&
-                       game_settings_.own_mapping;
+    const bool opens = game_options_ == category_controls &&
+                       (option_rows_.selected == kShortcutRow || option_rows_.selected == kGraphicsShortcutRow ||
+                        (option_rows_.selected == kMappingRow && game_settings_.own_mapping));
     if (!message_.empty())
     {
         notice_block(c, message_, 592.0f, kHints - 6.0f, theme::kSmall, 26.0f,

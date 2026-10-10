@@ -14,6 +14,8 @@
 #include "boot_trace.h"
 #ifdef PS5_NATIVE
 #include "elevation/elevation.hpp"
+#include <cerrno>
+#include <cstring>
 #include <sys/stat.h>
 #endif
 #ifdef EDEN_DEV_VULKAN
@@ -37,6 +39,9 @@
 #include "display_refresh.h"
 #include "log_flusher.h"
 #include "mods.h"
+#include "game_compatibility.h"
+#include "live_cheat_menu.h"
+#include "live_graphics_menu.h"
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "keyboard_applet.h"
@@ -157,6 +162,43 @@ static void MigrateSandboxData() {
 }
 #endif
 
+#ifdef PS5_NATIVE
+// Game files an early version kept inside the app's folder (assets/ with keys, firmware and
+// roms) move to /data/prosperoeden, where replacing the app cannot take them away: an update
+// that replaces the whole folder left the app without its keys and games. Both are on /data, so
+// it is a rename of each folder. Nothing moves unless all of it can: a folder chosen in Settings,
+// or anything already in /data/prosperoeden, leaves everything where it is.
+static void MoveGameFilesOutOfTheApp() {
+    const std::string from = std::string{Eden::kInstallDir} + "/assets", to = Eden::kDefaultAssetsDir;
+    const std::string saved = Eden::LoadSavedAssetsDir();
+    if ((!saved.empty() && saved != from) || !Eden::FileExists(from + "/keys/prod.keys") ||
+        Eden::FileExists(to + "/keys/prod.keys"))
+        return;
+    static constexpr const char* kFolders[] = {"keys", "firmware", "roms", "updates", "mods", "ryujinx", "save-import"};
+    (void)mkdir(to.c_str(), 0777);
+    for (const char* folder : kFolders) {
+        const std::string target = to + "/" + folder;
+        if (Eden::DirectoryExists(from + "/" + folder) && rmdir(target.c_str()) != 0 && errno != ENOENT) {
+            Eden::Report("game files", ("Left in the app's folder: " + target + " already holds files").c_str());
+            return;
+        }
+    }
+    int moved = 0;
+    for (const char* folder : kFolders) {
+        const std::string source = from + "/" + folder, target = to + "/" + folder;
+        if (!Eden::DirectoryExists(source)) continue;
+        if (std::rename(source.c_str(), target.c_str()) != 0) {
+            Eden::Report("game files", ("Could not move " + source + " to " + target + ": " + std::strerror(errno)).c_str());
+            continue;
+        }
+        ++moved;
+    }
+    if (!saved.empty()) (void)Eden::SaveAssetsDir(to);
+    Eden::Report("game files", (std::to_string(moved) + " folders moved from " + from + " to " + to +
+                                ", where an update of the app leaves them alone").c_str());
+}
+#endif
+
 // A game that has single Joy-Cons held sideways (their hold type, set by the game) is played on a
 // DualSense held as usual: the pad then turns the stick, the button places and the motion by a
 // quarter for each player who has such a Joy-Con (Pad::Grip). Asked a few times a second.
@@ -205,6 +247,11 @@ int main(int argc, char** argv) {
         // the packaged exact-title upstream helper is sent to the local elfldr. ProsperoEden
         // contains no locally implemented kernel mutation code. If neither path works, the app
         // keeps its sandbox paths.
+#if defined(EDEN_DEV_PROFILE)
+        // Development: a start without access, to see what the launcher says then.
+        if (access("/app0/no-filesystem-access.txt", F_OK) == 0) Eden::FilesystemAccessStatus() = 99;
+        else
+#endif
         Eden::FilesystemAccessStatus() = static_cast<int>(elevation::request(elevation::Capability::filesystem));
         Eden::BootTrace::Line("filesystem access returned status=%d, uid %d/%d gid %d/%d", Eden::FilesystemAccessStatus(),
                               static_cast<int>(getuid()), static_cast<int>(geteuid()), static_cast<int>(getgid()),
@@ -220,7 +267,10 @@ int main(int argc, char** argv) {
         // root, which may set its group.
         if (getegid() != getgid() && setegid(getgid()) != 0)
             Eden::Report("filesystem access", "Could not match the effective group; RADV's disk cache stays off");
-        if (Eden::FilesystemAccess()) MigrateSandboxData();
+        if (Eden::FilesystemAccess()) {
+            MigrateSandboxData();
+            MoveGameFilesOutOfTheApp();
+        }
         for (const auto& folder : {Eden::UserDir(), Eden::ConfigDir(), Eden::CoversDir(), Eden::LogsDir()}) {
             std::error_code folder_error;
             std::filesystem::create_directories(folder, folder_error);
@@ -670,6 +720,77 @@ int main(int argc, char** argv) {
         Settings::values.current_gpu_accuracy = Settings::GpuAccuracy::High;
         Settings::values.dma_accuracy.SetValue(Settings::DmaAccuracy::Default);
         Settings::values.memory_layout_mode = Settings::MemoryLayout::Memory_4Gb;
+#if defined(PS5_NATIVE) && defined(EDEN_PS5_OPENGL)
+        // Per-game compatibility preferences, without persisting changes to the
+        // user's Video/Performance settings. Each launch recomputes the policy.
+        [[maybe_unused]] bool pokemon_za_compat = true;
+        bool pokemon_za_perf = true;
+        bool pokemon_za_predication_cpu = false;
+        bool fast_rmx_compat = true;
+        {
+            std::ifstream config(Eden::AppFile("compatibility.txt"));
+            for (std::string option; config >> option;) {
+                if (option == "pokemon_za=off") pokemon_za_compat = false;
+                else if (option == "pokemon_za=on") pokemon_za_compat = true;
+                else if (option == "pokemon_za_perf=off") pokemon_za_perf = false;
+                else if (option == "pokemon_za_perf=on") pokemon_za_perf = true;
+                else if (option == "pokemon_za_predication=cpu") pokemon_za_predication_cpu = true;
+                else if (option == "pokemon_za_predication=default") pokemon_za_predication_cpu = false;
+                else if (option == "fast_rmx=off") fast_rmx_compat = false;
+                else if (option == "fast_rmx=on") fast_rmx_compat = true;
+            }
+        }
+        const auto fast_rmx_profile = Eden::Compatibility::ForFastRmx(game_title, fast_rmx_compat);
+        const auto za_perf_profile = Eden::Compatibility::ForPokemonZAPerformance(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_perf);
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA)
+            Eden::Report("compatibility", za_perf_profile.enabled ?
+                "Pokemon Legends Z-A: async shaders, internal rendering capped at 1x (output unchanged)" :
+                "Pokemon Legends Z-A: performance profile off (compatibility.txt)");
+        // Reset the GC mode between games: otherwise a Fast RMX session would
+        // leave the aggressive policy on for the next title in the launcher.
+        Eden::Performance::gc_keep_dirty.store(!fast_rmx_profile.early_dirty_eviction,
+                                               std::memory_order_relaxed);
+        Eden::Performance::fast_rmx_gc.store(fast_rmx_profile.enabled &&
+                backend == Eden::GraphicsBackend::Vulkan, std::memory_order_relaxed);
+#ifndef EDEN_DEV_PROFILE
+        Eden::Performance::texture_budget_log.store(fast_rmx_profile.enabled,
+                                                    std::memory_order_relaxed);
+#endif
+        if (fast_rmx_profile.use_conservative_vram)
+            Settings::values.vram_usage_mode.SetValue(Settings::VramUsageMode::Conservative);
+        if (game_title == Eden::Compatibility::kFastRmx) {
+            Eden::Report("compatibility", fast_rmx_profile.enabled ?
+                "Fast RMX: low-memory mode: 1x/1080p ceiling, early dirty-image eviction, conservative VRAM, framegen off" :
+                "Fast RMX: low-memory mode disabled (compatibility.txt)");
+        }
+#endif
+#if defined(PS5_NATIVE) && defined(EDEN_PS5_VULKAN)
+        // The known desktop RADV workaround for Pokemon Legends Z-A is EDS2 with
+        // vertex input dynamic state disabled (eden-emulator/Issue-Reports#481).
+        // Reset these values on every launch so a prior title's setting never leaks.
+        const auto vk_profile = Eden::Compatibility::ForGame(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_compat);
+        const auto za_predication = Eden::Compatibility::ForPokemonZAPredication(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_predication_cpu);
+        Eden::DevVulkan::hcr_mode = za_predication.hcr_mode; // reset when launching next game
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
+            Eden::Report("compatibility", za_predication.cpu_predication ?
+                "Pokemon Legends Z-A: experimental exact CPU draw predicates enabled (may stutter)" :
+                "Pokemon Legends Z-A: default Vulkan draw predicates");
+        }
+        Settings::values.dyna_state.SetValue(Settings::ExtendedDynamicState::EDS2);
+        Settings::values.vertex_input_dynamic_state.SetValue(vk_profile.vertex_input_dynamic_state);
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
+            std::printf("EDEN_GAME_COMPAT title_id=%016llX backend=%s eds=2 vertex_input_dynamic=%u preset=%s\n",
+                        static_cast<unsigned long long>(game_title), Eden::BackendName(backend),
+                        static_cast<unsigned>(vk_profile.vertex_input_dynamic_state),
+                        vk_profile.pokemon_za_workaround ? "pokemon_za" : "disabled_or_opengl");
+            Eden::Report("compatibility", vk_profile.pokemon_za_workaround ?
+                "Pokemon Legends Z-A: Vulkan EDS2, vertex input dynamic state off" :
+                "Pokemon Legends Z-A: Vulkan workaround not applied");
+        }
+#endif
         // A development run that names jit_list in dev-settings decides the block list by itself.
         [[maybe_unused]] bool dev_block_list = false;  // read where a session applies its settings
 #ifdef EDEN_DEV_PROFILE
@@ -860,7 +981,10 @@ int main(int argc, char** argv) {
                 Settings::ScalingFilter::NearestNeighbor};
             // Settings > Video, with what the game does differently (Library > Game settings > Video).
             const auto video = Eden::PreferencesFor(eden_game_title_id(guest));
-            const int resolution = video.resolution;
+            const int resolution = fast_rmx_profile.enabled ?
+                std::min(video.resolution, fast_rmx_profile.resolution_ceiling) :
+                za_perf_profile.enabled ? std::min(video.resolution, za_perf_profile.resolution_ceiling) :
+                video.resolution;
             const int filter = video.upscaling_filter;
             Settings::values.resolution_setup.SetValue(resolutions[resolution]);
             Settings::values.scaling_filter.SetValue(filters[filter]);
@@ -896,8 +1020,9 @@ int main(int argc, char** argv) {
                 (void)(frame_gen_file >> override_multiplier);
                 if (override_rate > 0) target = override_rate;
                 if (override_multiplier >= 2) multiplier = override_multiplier;
-                const bool active = (override_rate >= 0 || override_multiplier >= 0 || video.frame_gen) &&
-                                    video.backend == Eden::GraphicsBackend::Vulkan;
+                const bool active = !fast_rmx_profile.disable_frame_generation &&
+                                    (override_rate >= 0 || override_multiplier >= 0 || video.frame_gen) &&
+                                    backend == Eden::GraphicsBackend::Vulkan;
                 Settings::values.frame_gen.SetValue(active);
                 Settings::values.frame_gen_target_rate.SetValue(
                     active ? static_cast<unsigned>(std::min(target, 240)) : 0u);
@@ -940,17 +1065,20 @@ int main(int argc, char** argv) {
             Eden::Display::game_millihertz.store(60000);
             Eden::Display::skipped_frames.store(0);
             // The size of the picture the session puts out (Settings > Video > Output resolution).
-            Eden::Display::output_width.store(Eden::kOutputWidth[video.output]);
-            Eden::Display::output_height.store(Eden::kOutputHeight[video.output]);
+            const int output = fast_rmx_profile.enabled ?
+                std::min(video.output, fast_rmx_profile.output_ceiling) : video.output;
+            Eden::Display::output_width.store(Eden::kOutputWidth[output]);
+            Eden::Display::output_height.store(Eden::kOutputHeight[output]);
             Eden::Report("launch", (std::string("Resolution ") + Eden::kResolutionKeys[resolution] + ", " +
                                     Eden::kUpscalingFilterLabels[filter] + ", output " +
-                                    Eden::kOutputKeys[video.output] + ", " + Eden::kRefreshKeys[refresh] +
+                                    Eden::kOutputKeys[output] + ", " + Eden::kRefreshKeys[refresh] +
                                     " Hz").c_str());
             // Speed against accuracy ("performance" in the settings file, settings_store.h): each
             // one is off unless chosen there, for every game or for this one. The levels start
             // every session at their exact values (above), so one that is not chosen is off.
             const auto speed = Eden::LoadPerformance(eden_game_title_id(guest));
-            Settings::values.use_asynchronous_shaders = speed.async_shaders;
+            Settings::values.use_asynchronous_shaders =
+                speed.async_shaders || za_perf_profile.asynchronous_shaders;
             if (speed.fast_gpu) {
                 // Nothing calls UpdateGPUAccuracy() here; set the live value too.
                 Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);
@@ -993,6 +1121,7 @@ int main(int argc, char** argv) {
             // Of a mod that lists several cheats, only the ones chosen there run (cheats.h).
             const auto cheats_on = Eden::LoadChosenCheats(title);
             Eden::Cheats::Off() = Eden::Mods::CheatsOff(all_mods, cheats_on);
+            Eden::Cheats::ClearMain(); // no cheat code survives a game session
             const std::string mods = Eden::Mods::Summary(all_mods, mods_off, cheats_on);
             Settings::values.disabled_addons[title] = mods_off;
             Eden::Report("launch", ("Mods: " + mods).c_str());
@@ -1074,6 +1203,13 @@ int main(int argc, char** argv) {
             const auto controls = Eden::PreferencesFor(game_title);
             Settings::values.vibration_enabled.SetValue(controls.vibration);
             pad->SetMapping(controls.mapping);
+            const auto shortcuts = Eden::LoadPreferences().shortcuts;
+            pad->SetShortcuts(shortcuts);
+            Eden::Report("controls", (std::string("SHORTCUTS_MENU_V2: Return=") +
+                Eden::kShortcutLabels[shortcuts[0]] + ", FPS=" +
+                Eden::kShortcutLabels[shortcuts[1]] + ", Pause/Cheats=" +
+                Eden::kShortcutLabels[shortcuts[2]] + ", Live graphics=" +
+                Eden::kShortcutLabels[shortcuts[3]]).c_str());
             Eden::Report("launch", (std::string("Controls: vibration ") + (controls.vibration ? "on" : "off") +
                                     ", buttons " + (controls.mapping == Eden::kDefaultMapping ? std::string("as usual") :
                                     Eden::Settings::MappingJson(controls.mapping).dump())).c_str());
@@ -1205,6 +1341,8 @@ int main(int argc, char** argv) {
                     while (!stop.stop_requested()) {
                         pad->Poll();
                         (void)pad->TakeHudToggle();
+                        (void)pad->TakePauseCheats();
+                        (void)pad->TakeGraphicsMenu();
 #if defined(EDEN_DEV_PROFILE) || defined(EDEN_DEV_ROM_ID)
                         // The runner's stand-in for the press: its input commands are read only
                         // once the game runs.
@@ -1415,7 +1553,9 @@ int main(int argc, char** argv) {
 #endif
                 const auto session_start = std::chrono::steady_clock::now();
                 [[maybe_unused]] double session_seconds = 0;  // guest-fault relaunch (PS5 only)
+                std::atomic<bool> stop_cheat_dialog{false};
                 std::jthread input_worker;
+                SCOPE_EXIT { stop_cheat_dialog = true; input_worker.request_stop(); };
                 if (pad) input_worker = std::jthread([&](std::stop_token stop) {
 #ifdef EDEN_DEV_PROFILE
                     // The timed input replay drives the profile's own title (EDEN_DEV_PROFILE_TITLE);
@@ -1519,6 +1659,19 @@ int main(int argc, char** argv) {
                         if (pad->TakeHudToggle()) Eden::ToggleHud();
 #else
                         (void)pad->TakeHudToggle();
+#endif
+#ifdef PS5_NATIVE
+                        if (game && pad->TakePauseCheats()) {
+                            Eden::Report("controls", "Pause / Cheats shortcut received");
+                            Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);
+                        }
+                        if (game && pad->TakeGraphicsMenu()) {
+                            Eden::Report("controls", "Live graphics shortcut received");
+                            Eden::ShowPausedGraphics(system, *pad, backend, stop_cheat_dialog);
+                        }
+#else
+                        (void)pad->TakePauseCheats();
+                        (void)pad->TakeGraphicsMenu();
 #endif
                         if (pad->TakeReturnToMenu()) {
                             // From here the player is waiting to leave (stop_limit.h).

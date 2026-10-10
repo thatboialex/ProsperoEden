@@ -510,8 +510,12 @@ EdenServices::~EdenServices() {
 pe::ui::Home EdenServices::home() {
     const std::lock_guard lock(bridge_);
     pe::ui::Home home;
-    home.setup_ready = setup_.empty();
-    if (!home.setup_ready) {
+    home.setup_ready = setup_.empty() && Eden::FilesystemAccess();
+    if (!Eden::FilesystemAccess()) {
+        // No data is kept anywhere else (storage_paths.h): say so, and start nothing.
+        home.status = fill(tr("ProsperoEden could not get access to the console's storage, so it cannot read your settings, saves and games. Nothing was changed. Close ProsperoEden and open it again. (Code {0})"),
+                           {std::to_string(Eden::FilesystemAccessStatus())});
+    } else if (!home.setup_ready) {
         home.status = fill(tr("Setup required: {0} Open Settings, Game files to choose the folder that holds your "
                               "keys, firmware and roms folders (or add the files to {1}), then reopen ProsperoEden."),
                            {SetupMessage(setup_), Eden::AssetsDir()});
@@ -903,6 +907,7 @@ pe::ui::Preferences EdenServices::preferences() {
     result.reactive_flushing = speed.reactive_flushing;
     result.skip_invalidation = speed.skip_invalidation;
     result.mapping = saved.mapping;
+    result.shortcuts = saved.shortcuts;
     return result;
 }
 
@@ -928,6 +933,7 @@ bool EdenServices::set_preferences(const pe::ui::Preferences& preferences) {
     value.high_contrast = preferences.high_contrast;
     value.reduce_motion = preferences.reduce_motion;
     value.mapping = preferences.mapping;
+    value.shortcuts = preferences.shortcuts;
     Eden::PerformanceSettings speed = Eden::LoadPerformance(0);
     speed.block_list = preferences.block_list;
     speed.async_shaders = preferences.async_shaders;
