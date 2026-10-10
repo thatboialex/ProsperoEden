@@ -690,6 +690,8 @@ int main(int argc, char** argv) {
         // leave the aggressive policy on for the next title in the launcher.
         Eden::Performance::gc_keep_dirty.store(!fast_rmx_profile.early_dirty_eviction,
                                                std::memory_order_relaxed);
+        Eden::Performance::fast_rmx_gc.store(fast_rmx_profile.enabled &&
+                backend == Eden::GraphicsBackend::Vulkan, std::memory_order_relaxed);
 #ifndef EDEN_DEV_PROFILE
         Eden::Performance::texture_budget_log.store(fast_rmx_profile.enabled,
                                                     std::memory_order_relaxed);
