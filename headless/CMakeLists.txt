@@ -901,6 +901,15 @@ endforeach()
 string(REPLACE "    u64 program_id;\n\n" "" system_source "${system_source}")
 string(REPLACE "        if (app_loader->ReadProgramId(program_id) != Loader::ResultStatus::Success) {\n            LOG_ERROR(Core, \"Failed to find program id for ROM\");\n        }\n\n" "" system_source "${system_source}")
 string(REPLACE "GameSettings::LoadOverrides(program_id," "GameSettings::LoadOverrides(params.program_id," system_source "${system_source}")
+# Allow the paused frontend to replace the loaded cheat program, without
+# destroying/reinitializing the looping cheat engine or its timing event.
+set(old_live_reload "    impl->cheat_engine.emplace(*this, list, build_id);")
+set(new_live_reload "    if (impl->cheat_engine && IsPaused()) {\n        impl->cheat_engine->Reload(list);\n        return;\n    }\n    impl->cheat_engine.emplace(*this, list, build_id);")
+string(FIND "${system_source}" "${old_live_reload}" live_reload_at)
+if(live_reload_at LESS 0)
+    message(FATAL_ERROR "Pinned cheat list registration changed; review safe live reload")
+endif()
+string(REPLACE "${old_live_reload}" "${new_live_reload}" system_source "${system_source}")
 # Join callbacks before their service-owned targets can be destroyed.
 set(old_audio_shutdown "        stop_event.request_stop();")
 string(FIND "${system_source}" "${old_audio_shutdown}" audio_shutdown_offset)
@@ -1002,6 +1011,7 @@ if(PS5_NATIVE)
     set(old_nso_cheats [=[        if (!cheats.empty()) {
             system.RegisterCheatList(cheats, nso_header.build_id, load_base, image_size);]=])
     set(new_nso_cheats [=[        if (name == "main") {
+            Eden::Cheats::KeepMain(); // snapshot the unfiltered main-module cheats
             // The build ID a cheat file for this version of the game is named after.
             char build[17]{};
             for (int i = 0; i < 8; ++i)
@@ -1017,7 +1027,7 @@ if(PS5_NATIVE)
         message(FATAL_ERROR "Pinned NSO cheat registration changed")
     endif()
     string(REPLACE "${old_nso_cheats}" "${new_nso_cheats}" nso_source "${nso_source}")
-    string(PREPEND nso_source "#include <cstdio>\n")
+    string(PREPEND nso_source "#include <cstdio>\n#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
     write_derived("${PORT_BUILD_DIR}/nso.cpp" "${nso_source}")
     list(REMOVE_ITEM core_sources loader/nso.cpp)
     list(APPEND core_sources "${PORT_BUILD_DIR}/nso.cpp")
@@ -1202,6 +1212,11 @@ eden_patch(patch_source
     "const auto this_build_id = fmt::format(\"{:0<64}\", Common::ToUpper(name.substr(0, name.find('.'))));")
 # A game without a mods folder is the usual case here, not an error to log for each of its modules.
 eden_patch(patch_source "        LOG_ERROR(Loader, \"Cannot load mods for invalid title_id={:016X}\", title_id);\n" "")
+# Collect each module independently so the main-module snapshot doesn't pick up
+# sdk/rtld cheats, or stale entries from another game.
+eden_patch(patch_source
+    "    std::vector<Core::Memory::CheatEntry> out;\n    for (const auto& subdir : patch_dirs) {"
+    "    Eden::Cheats::BeginCollection();\n    std::vector<Core::Memory::CheatEntry> out;\n    for (const auto& subdir : patch_dirs) {")
 # Cheats chosen one by one (headless/cheats.h): each mod's cheat list, from its folder or from a
 # loose cheat file, goes into the game's with the cheats that were not chosen switched off.
 eden_patch(patch_source "std::copy(res->begin(), res->end(), std::back_inserter(out));"
