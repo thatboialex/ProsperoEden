@@ -660,12 +660,38 @@ gc_setup = '''    const auto ReclaimedBytes = [&](const ImageBase& image) {
 ''' + reclaimed_bytes + '''        return bytes;
     };
 ''' + (port / 'vulkan_gc_downloads.inc').read_text()
+# The original Eden collector visits only 20/40 old textures per pass. Logs from
+# Fast RMX 1x/1080p show ~4.22 GiB usage against a ~3.44 GiB critical mark,
+# and the largest available direct-memory block falling below 300 MiB.
+# Allow a per-title pressure response before the next Vulkan CreateImage.
+gc_policy_before = '''    const auto Configure = [&](bool allow_aggressive) {
+        high_priority_mode = total_used_memory >= expected_memory;
+        aggressive_mode = allow_aggressive && total_used_memory >= critical_memory;
+        ticks_to_destroy = aggressive_mode ? 10ULL : high_priority_mode ? 25ULL : 50ULL;
+        num_iterations = aggressive_mode ? 40 : (high_priority_mode ? 20 : 10);
+    };'''
+gc_policy_after = '''    const bool fast_rmx_gc = std::is_same_v<Runtime, Vulkan::TextureCacheRuntime> &&
+        ::Eden::Performance::fast_rmx_gc.load(std::memory_order_relaxed);
+    const auto free_probe = ::Eden::Performance::graphics_memory_free.load(std::memory_order_relaxed);
+    const u64 free_block = fast_rmx_gc && free_probe ? free_probe() : std::numeric_limits<u64>::max();
+    const auto Configure = [&](bool allow_aggressive) {
+        const auto policy = ::Eden::FastRmxGC::Choose(
+            fast_rmx_gc, allow_aggressive, total_used_memory,
+            expected_memory, critical_memory, free_block);
+        high_priority_mode = policy.high_priority;
+        aggressive_mode = policy.aggressive;
+        ticks_to_destroy = policy.age_frames;
+        num_iterations = policy.iterations;
+    };'''
 for old, new in [
+    (gc_policy_before, gc_policy_after),
     ('    const auto Cleanup = [this, &num_iterations, &high_priority_mode, &aggressive_mode]',
      gc_setup + '\n    const auto Cleanup = [&, this]'),
     ('        if (must_download) {', '        if (must_download && !UsePrefetched(image_id, image)) {'),
     ('(!high_priority_mode && must_download)) {', '(!DirtyEvictions() && must_download)) {'),
     ('    Configure(false);', '    Configure(false);\n    PrefetchDownloads();'),
+    ('    if (total_used_memory >= critical_memory) {',
+     '    if (::Eden::FastRmxGC::NeedSecondPass(fast_rmx_gc, total_used_memory, critical_memory, free_block)) {'),
     ('        Configure(true);', '        Configure(true);\n        PrefetchDownloads();'),
 ]:
     if gc.count(old) != 1:
@@ -709,7 +735,8 @@ adapt('src/video_core/texture_cache/texture_cache.h',
     # threshold despite a 4 GiB budget. Retain 40% headroom; keep the original
     # critical threshold and minimum 1 GiB spacing. OpenGL remains unchanged.
     ('const s64 min_vacancy_expected = (6 * mem_threshold) / 10;',
-     'const s64 min_vacancy_expected =\n            ((std::is_same_v<Runtime, Vulkan::TextureCacheRuntime> ? 4 : 6) * mem_threshold) / 10;'),
+     'const s64 min_vacancy_expected =\n            ((std::is_same_v<Runtime, Vulkan::TextureCacheRuntime> ?\n'
+      '              (::Eden::Performance::fast_rmx_gc.load(std::memory_order_relaxed) ? 6 : 4) : 6) * mem_threshold) / 10;'),
 ] + texture_costs)
 
 # These costs sit outside vkCreateGraphicsPipelines: guest shader translation,
