@@ -299,7 +299,8 @@ void Launcher::draw_settings(Canvas &c)
                  {tr("BUTTON MAPPING"), prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed")},
                  {tr("RETURN TO LIBRARY"), Eden::kShortcutLabels[prefs_.shortcuts[0]]},
                  {tr("FPS OVERLAY"), Eden::kShortcutLabels[prefs_.shortcuts[1]]},
-                 {tr("PAUSE / CHEATS"), Eden::kShortcutLabels[prefs_.shortcuts[2]]}};
+                 {tr("PAUSE / CHEATS"), Eden::kShortcutLabels[prefs_.shortcuts[2]]},
+                 {tr("LIVE GRAPHICS"), Eden::kShortcutLabels[prefs_.shortcuts[3]]}};
         break;
     case kAccessibility:
         about = tr("Make the menu easier to see and follow.");
@@ -554,7 +555,7 @@ void Launcher::press_dialog(Key key)
             if (activate) open_mapping(false);
             return;
         }
-        if (option_ >= 2 && option_ <= 4) {
+        if (option_ >= 2 && option_ <= 5) {
             const int action = option_ - 2;
             const int count = int(std::size(Eden::kShortcutLabels));
             const int next = (prefs_.shortcuts[action] + (step < 0 ? count - 1 : 1)) % count;
@@ -648,33 +649,34 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     const int last = scrolls ? rows_view.last_row() : rows - 1;
     if (scrolls)
         list.push_clip({window.x - 24.0f, window.y - 6.0f, window.w + 48.0f, window.h + 12.0f});
+    const float dialog_height = modal == Modal::controls ? Eden::ControlsMenu::kRowHeight : 94.0f;
     for (int row = first; row <= last; ++row)
     {
         list.push_opacity(scrolls ? rows_view.row_alpha(row, kVideoRowHeight) : 1.0f);
-        plate_rest(c, kRowPlate, {592.0f, dialog_row_top(modal, row), 736.0f, 94.0f});
+        plate_rest(c, kRowPlate, {592.0f, dialog_row_top(modal, row), 736.0f, dialog_height});
         list.pop_opacity();
     }
     plate_focus(c, kRowPlate,
                 {592.0f,
                  scrolls ? kVideoRowsTop + rows_view.cursor() - rows_view.scroll() :
                            option_cursor_.value,
-                 736.0f, 94.0f},
+                 736.0f, dialog_height},
                 1.0f);
 
     // A row's name takes what its control (`taken` wide, at the right) leaves of the row.
     const auto label = [&](int row, const char *value, float taken)
     {
-        text_shrink(c, value, 628.0f, baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+        text_shrink(c, value, 628.0f, baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                     theme::kText24, theme::kValue, 664.0f - taken - 28.0f);
     };
     const auto choice = [&](int row, const std::string &value)
     {
         return chooser(c, value, 1296.0f,
-                       baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+                       baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                        row == option_ ? 1.0f : 0.0f, theme::kLimePale);
     };
     constexpr float kToggle = 64.0f;
-    const auto row_centre = [&](int row) { return dialog_row_top(modal, row) + 47.0f; };
+    const auto row_centre = [&](int row) { return dialog_row_top(modal, row) + dialog_height / 2; };
     const float knob = tween::clamp01(switches_[0].value);
 
     switch (modal)
@@ -728,7 +730,7 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         const auto level_row = [&](int row, const char *name, const std::string &value, int level)
         {
             const float shown =
-                text(c, value, 1292.0f, baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+                text(c, value, 1292.0f, baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                      theme::kText24, theme::kLimePale, Align::right);
             const float gap = std::max(96.0f, shown + 20.0f);
             level_bar(c, 1292.0f - gap, row_centre(row), 260.0f, static_cast<float>(level) / 100.0f,
@@ -748,16 +750,17 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         toggle(c, 1292.0f, row_centre(0), knob);
         const float mapped = text_shrink(c,
             prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed"), 1292.0f,
-            baseline(dialog_row_top(modal, 1), 94.0f, theme::kSmall), theme::kSmall,
+            baseline(dialog_row_top(modal, 1), dialog_height, theme::kSmall), theme::kSmall,
             theme::kLimePale, 345.0f, Align::right);
         label(1, tr("Button mapping"), mapped);
         static constexpr const char* action_names[] = {
-            TR("Return to library"), TR("FPS overlay"), TR("Pause / cheats")};
-        for (int i = 0; i < 3; ++i) {
+            TR("Return to library"), TR("FPS overlay"), TR("Pause / cheats"),
+            TR("Live graphics")};
+        for (int i = 0; i < Eden::kShortcutActionCount; ++i) {
             const int row = i + 2;
             const char* chord = Eden::kShortcutLabels[prefs_.shortcuts[i]];
             const float width = text_shrink(c, chord, 1292.0f,
-                baseline(dialog_row_top(modal, row), 94.0f, theme::kSmall),
+                baseline(dialog_row_top(modal, row), dialog_height, theme::kSmall),
                 theme::kSmall, theme::kLimePale, 410.0f, Align::right);
             label(row, tr(action_names[i]), width);
         }
