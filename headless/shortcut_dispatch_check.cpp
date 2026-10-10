@@ -16,9 +16,11 @@ int main() {
     assert(DispatchShortcut(bindings,masks,touch|L1,Mask{0}).action==0);
     assert(DispatchShortcut(bindings,masks,touch|R1,Mask{0}).action==1);
     assert(DispatchShortcut(bindings,masks,touch,Mask{0}).action==-1);
+    assert(DispatchShortcut(bindings,masks,create|options,Mask{0}).action==3);
+    assert(!DispatchShortcut(bindings,masks,create|options,create|options).activated);
     assert(DispatchShortcut(bindings,masks,touch|L1|options,Mask{0}).action==2);
     const auto swapped=AssignShortcut(bindings,2,0);
     assert(DispatchShortcut(swapped,masks,touch|L1,Mask{0}).action==2);
     assert(DispatchShortcut(swapped,masks,touch|options,Mask{0}).action==0);
-    std::cout << "PASS pause, return, HUD shortcuts, edge, priority, remap\n";
+    std::cout << "PASS pause, graphics, return, HUD shortcuts, edge, priority, remap\n";
 }
