@@ -1066,7 +1066,7 @@ eden_patch(cheat_runtime_source
     "        Eden::CheatRuntime::Read(false, address);\n        std::memset(data, 0, size);\n        return;")
 eden_patch(cheat_runtime_source
     "    process->GetMemory().ReadBlock(address, data, size);"
-    "    Eden::CheatRuntime::Read(true, address);\n    process->GetMemory().ReadBlock(address, data, size);")
+    "    // A mapped address is not proof of a successful read: partial or failed\n    // reads must not feed stale pointer bytes into the next cheat opcode.\n    const bool succeeded = process->GetMemory().ReadBlock(address, data, size);\n    Eden::CheatRuntime::Read(succeeded, address);\n    if (!succeeded) std::memset(data, 0, size);")
 eden_patch(cheat_runtime_source
     "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        return;\n    }"
     "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        Eden::CheatRuntime::Write(false, false, address);\n        return;\n    }")
