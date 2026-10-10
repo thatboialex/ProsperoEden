@@ -676,6 +676,7 @@ int main(int argc, char** argv) {
         // user's Video/Performance settings. Each launch recomputes the policy.
         [[maybe_unused]] bool pokemon_za_compat = true;
         bool pokemon_za_perf = true;
+        bool pokemon_za_predication_cpu = false;
         bool fast_rmx_compat = true;
         {
             std::ifstream config(Eden::AppFile("compatibility.txt"));
@@ -684,6 +685,8 @@ int main(int argc, char** argv) {
                 else if (option == "pokemon_za=on") pokemon_za_compat = true;
                 else if (option == "pokemon_za_perf=off") pokemon_za_perf = false;
                 else if (option == "pokemon_za_perf=on") pokemon_za_perf = true;
+                else if (option == "pokemon_za_predication=cpu") pokemon_za_predication_cpu = true;
+                else if (option == "pokemon_za_predication=default") pokemon_za_predication_cpu = false;
                 else if (option == "fast_rmx=off") fast_rmx_compat = false;
                 else if (option == "fast_rmx=on") fast_rmx_compat = true;
             }
@@ -719,6 +722,14 @@ int main(int argc, char** argv) {
         // Reset these values on every launch so a prior title's setting never leaks.
         const auto vk_profile = Eden::Compatibility::ForGame(
             game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_compat);
+        const auto za_predication = Eden::Compatibility::ForPokemonZAPredication(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_predication_cpu);
+        Eden::DevVulkan::hcr_mode = za_predication.hcr_mode; // reset when launching next game
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
+            Eden::Report("compatibility", za_predication.cpu_predication ?
+                "Pokemon Legends Z-A: experimental exact CPU draw predicates enabled (may stutter)" :
+                "Pokemon Legends Z-A: default Vulkan draw predicates");
+        }
         Settings::values.dyna_state.SetValue(Settings::ExtendedDynamicState::EDS2);
         Settings::values.vertex_input_dynamic_state.SetValue(vk_profile.vertex_input_dynamic_state);
         if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
