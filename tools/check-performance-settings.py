@@ -23,8 +23,8 @@ assert 'const auto speed = Eden::LoadPerformance(eden_game_title_id(guest));' in
 import re
 
 shader_assignment = re.search(
-    r'Settings::values\\.use_asynchronous_shaders\\s*=\\s*'
-    r'speed\\.async_shaders\\s*\\|\\|\\s*za_perf_profile\\.asynchronous_shaders\\s*;',
+    r'Settings::values\.use_asynchronous_shaders\s*=\s*'
+    r'speed\.async_shaders\s*\|\|\s*za_perf_profile\.asynchronous_shaders\s*;',
     release,
 )
 assert shader_assignment, "Release must apply user shader preference and Z-A profile"
