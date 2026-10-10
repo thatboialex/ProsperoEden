@@ -38,6 +38,7 @@
 #include "log_flusher.h"
 #include "mods.h"
 #include "game_compatibility.h"
+#include "live_cheat_menu.h"
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "keyboard_applet.h"
@@ -1072,6 +1073,7 @@ int main(int argc, char** argv) {
             // Of a mod that lists several cheats, only the ones chosen there run (cheats.h).
             const auto cheats_on = Eden::LoadChosenCheats(title);
             Eden::Cheats::Off() = Eden::Mods::CheatsOff(all_mods, cheats_on);
+            Eden::Cheats::ClearMain(); // no cheat code survives a game session
             const std::string mods = Eden::Mods::Summary(all_mods, mods_off, cheats_on);
             Settings::values.disabled_addons[title] = mods_off;
             Eden::Report("launch", ("Mods: " + mods).c_str());
@@ -1153,6 +1155,7 @@ int main(int argc, char** argv) {
             const auto controls = Eden::PreferencesFor(game_title);
             Settings::values.vibration_enabled.SetValue(controls.vibration);
             pad->SetMapping(controls.mapping);
+            pad->SetShortcuts(Eden::LoadPreferences().shortcuts);
             Eden::Report("launch", (std::string("Controls: vibration ") + (controls.vibration ? "on" : "off") +
                                     ", buttons " + (controls.mapping == Eden::kDefaultMapping ? std::string("as usual") :
                                     Eden::Settings::MappingJson(controls.mapping).dump())).c_str());
@@ -1284,6 +1287,7 @@ int main(int argc, char** argv) {
                     while (!stop.stop_requested()) {
                         pad->Poll();
                         (void)pad->TakeHudToggle();
+                        (void)pad->TakePauseCheats();
 #if defined(EDEN_DEV_PROFILE) || defined(EDEN_DEV_ROM_ID)
                         // The runner's stand-in for the press: its input commands are read only
                         // once the game runs.
@@ -1494,7 +1498,9 @@ int main(int argc, char** argv) {
 #endif
                 const auto session_start = std::chrono::steady_clock::now();
                 [[maybe_unused]] double session_seconds = 0;  // guest-fault relaunch (PS5 only)
+                std::atomic<bool> stop_cheat_dialog{false};
                 std::jthread input_worker;
+                SCOPE_EXIT { stop_cheat_dialog = true; input_worker.request_stop(); };
                 if (pad) input_worker = std::jthread([&](std::stop_token stop) {
 #ifdef EDEN_DEV_PROFILE
                     // The timed input replay drives the profile's own title (EDEN_DEV_PROFILE_TITLE);
@@ -1598,6 +1604,13 @@ int main(int argc, char** argv) {
                         if (pad->TakeHudToggle()) Eden::ToggleHud();
 #else
                         (void)pad->TakeHudToggle();
+#endif
+#ifdef PS5_NATIVE
+                        if (game && pad->TakePauseCheats()) {
+                            Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);
+                        }
+#else
+                        (void)pad->TakePauseCheats();
 #endif
                         if (pad->TakeReturnToMenu()) {
                             // From here the player is waiting to leave (stop_limit.h).
