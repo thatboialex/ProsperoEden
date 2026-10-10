@@ -136,6 +136,11 @@ jobs:
           key: ccache-u24-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: ccache-u24-
 
+      - name: Check compatibility policies
+        run: |
+          c++ -std=c++20 -Wall -Wextra -Werror headless/game_compatibility_check.cpp -o /tmp/eden-game-compatibility-check
+          /tmp/eden-game-compatibility-check
+
       - name: Build and package
         id: build
         timeout-minutes: 315
