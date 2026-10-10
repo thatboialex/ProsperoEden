@@ -3,6 +3,7 @@
 #include "shortcut_chords.h"
 #include <cassert>
 #include <iostream>
+#include <string>
 int main() {
     using namespace Eden::ControlsMenu;
     assert(Fits());
