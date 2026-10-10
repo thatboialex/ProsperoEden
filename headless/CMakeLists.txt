@@ -1026,6 +1026,58 @@ list(REMOVE_ITEM core_sources core.cpp)
 list(APPEND core_sources "${PORT_BUILD_DIR}/core.cpp")
 set_property(TARGET core PROPERTY SOURCES "${core_sources}")
 
+# Registering cheats is not proof that their pointer chains write guest memory.
+# Collect only periodic VM totals; never print a line for each memory opcode.
+file(READ "${PROJECT_SOURCE_DIR}/src/core/memory/cheat_engine.cpp" cheat_runtime_source)
+eden_patch(cheat_runtime_source
+    "        std::memset(data, 0, size);\n        return;"
+    "        Eden::CheatRuntime::Read(false, address);\n        std::memset(data, 0, size);\n        return;")
+eden_patch(cheat_runtime_source
+    "    process->GetMemory().ReadBlock(address, data, size);"
+    "    Eden::CheatRuntime::Read(true, address);\n    process->GetMemory().ReadBlock(address, data, size);")
+eden_patch(cheat_runtime_source
+    "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        return;\n    }"
+    "        !process->GetMemory().IsValidVirtualAddress(address)) {\n        Eden::CheatRuntime::Write(false, false, address);\n        return;\n    }")
+eden_patch(cheat_runtime_source
+    "    if (process->GetMemory().WriteBlock(address, data, size)) {\n        Core::InvalidateInstructionCacheRange(process, address, size);\n    }"
+    "    const bool succeeded = process->GetMemory().WriteBlock(address, data, size);\n    Eden::CheatRuntime::Write(true, succeeded, address);\n    if (succeeded) {\n        Core::InvalidateInstructionCacheRange(process, address, size);\n    }")
+eden_patch(cheat_runtime_source
+    "void CheatEngine::Initialize() {"
+    "void CheatEngine::Initialize() {\n    Eden::CheatRuntime::Reset();")
+set(old_cheat_callback [=[void CheatEngine::FrameCallback(std::chrono::nanoseconds ns_late) {
+    if (is_pending_reload.exchange(false)) {
+        vm.LoadProgram(cheats);
+    }
+
+    if (vm.GetProgramSize() == 0) {
+        return;
+    }
+
+    vm.Execute(metadata);
+}]=])
+set(new_cheat_callback [=[void CheatEngine::FrameCallback(std::chrono::nanoseconds ns_late) {
+    if (is_pending_reload.exchange(false) && !vm.LoadProgram(cheats)) {
+        std::fprintf(stderr, "[ProsperoEden] cheat-vm: opcode limit exceeded; no cheats can execute\n");
+    }
+    if (vm.GetProgramSize() != 0) {
+        vm.Execute(metadata);
+    }
+    const auto tick = Eden::CheatRuntime::frames.fetch_add(1, std::memory_order_relaxed) + 1;
+    if (tick == 1 || tick % 60 == 0) {
+        std::size_t enabled = 0;
+        for (const auto& cheat : cheats)
+            if (cheat.enabled && cheat.definition.num_opcodes != 0) ++enabled;
+        Eden::CheatRuntime::Report(cheats.size(), enabled, vm.GetProgramSize());
+    }
+}]=])
+eden_patch(cheat_runtime_source "${old_cheat_callback}" "${new_cheat_callback}")
+string(PREPEND cheat_runtime_source "#include \"${EDEN_PORT_DIR}/cheat_runtime.h\"\n")
+write_derived("${PORT_BUILD_DIR}/cheat_engine_runtime.cpp" "${cheat_runtime_source}")
+get_target_property(core_sources core SOURCES)
+list(REMOVE_ITEM core_sources memory/cheat_engine.cpp)
+list(APPEND core_sources "${PORT_BUILD_DIR}/cheat_engine_runtime.cpp")
+set_property(TARGET core PROPERTY SOURCES "${core_sources}")
+
 # The builder's vectors own every context through serialization. Parent links
 # only navigate that live tree; owning them creates parent/child cycles.
 file(READ "${PROJECT_SOURCE_DIR}/src/core/file_sys/fsmitm_romfsbuild.cpp" romfs_source)
