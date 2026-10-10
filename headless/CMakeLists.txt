@@ -1026,6 +1026,28 @@ list(REMOVE_ITEM core_sources core.cpp)
 list(APPEND core_sources "${PORT_BUILD_DIR}/core.cpp")
 set_property(TARGET core PROPERTY SOURCES "${core_sources}")
 
+# The builder's vectors own every context through serialization. Parent links
+# only navigate that live tree; owning them creates parent/child cycles.
+file(READ "${PROJECT_SOURCE_DIR}/src/core/file_sys/fsmitm_romfsbuild.cpp" romfs_source)
+string(REPLACE "    std::shared_ptr<RomFSBuildDirectoryContext> parent;"
+    "    RomFSBuildDirectoryContext* parent = nullptr;" romfs_source "${romfs_source}")
+string(REPLACE "parent = std::move(parent_dir_ctx);" "parent = parent_dir_ctx.get();" romfs_source "${romfs_source}")
+write_derived("${PORT_BUILD_DIR}/fsmitm_romfsbuild.cpp" "${romfs_source}")
+get_target_property(core_sources core SOURCES)
+list(REMOVE_ITEM core_sources file_sys/fsmitm_romfsbuild.cpp)
+list(APPEND core_sources "${PORT_BUILD_DIR}/fsmitm_romfsbuild.cpp")
+set_property(TARGET core PROPERTY SOURCES "${core_sources}")
+
+# One change to a pinned Eden source; the build stops when the text it replaces is gone.
+function(eden_patch source old new)
+    string(FIND "${${source}}" "${old}" patch_at)
+    if(patch_at LESS 0)
+        message(FATAL_ERROR "Pinned Eden source changed; not found: ${old}")
+    endif()
+    string(REPLACE "${old}" "${new}" patched "${${source}}")
+    set(${source} "${patched}" PARENT_SCOPE)
+endfunction()
+
 # Registering cheats is not proof that their pointer chains write guest memory.
 # Collect only periodic VM totals; never print a line for each memory opcode.
 file(READ "${PROJECT_SOURCE_DIR}/src/core/memory/cheat_engine.cpp" cheat_runtime_source)
@@ -1077,28 +1099,6 @@ get_target_property(core_sources core SOURCES)
 list(REMOVE_ITEM core_sources memory/cheat_engine.cpp)
 list(APPEND core_sources "${PORT_BUILD_DIR}/cheat_engine_runtime.cpp")
 set_property(TARGET core PROPERTY SOURCES "${core_sources}")
-
-# The builder's vectors own every context through serialization. Parent links
-# only navigate that live tree; owning them creates parent/child cycles.
-file(READ "${PROJECT_SOURCE_DIR}/src/core/file_sys/fsmitm_romfsbuild.cpp" romfs_source)
-string(REPLACE "    std::shared_ptr<RomFSBuildDirectoryContext> parent;"
-    "    RomFSBuildDirectoryContext* parent = nullptr;" romfs_source "${romfs_source}")
-string(REPLACE "parent = std::move(parent_dir_ctx);" "parent = parent_dir_ctx.get();" romfs_source "${romfs_source}")
-write_derived("${PORT_BUILD_DIR}/fsmitm_romfsbuild.cpp" "${romfs_source}")
-get_target_property(core_sources core SOURCES)
-list(REMOVE_ITEM core_sources file_sys/fsmitm_romfsbuild.cpp)
-list(APPEND core_sources "${PORT_BUILD_DIR}/fsmitm_romfsbuild.cpp")
-set_property(TARGET core PROPERTY SOURCES "${core_sources}")
-
-# One change to a pinned Eden source; the build stops when the text it replaces is gone.
-function(eden_patch source old new)
-    string(FIND "${${source}}" "${old}" patch_at)
-    if(patch_at LESS 0)
-        message(FATAL_ERROR "Pinned Eden source changed; not found: ${old}")
-    endif()
-    string(REPLACE "${old}" "${new}" patched "${${source}}")
-    set(${source} "${patched}" PARENT_SCOPE)
-endfunction()
 
 # Mods (headless/mods.h). The pinned patch code cannot apply an .ips patch (it looks for the
 # patch's magic in the game's code, and its end marker test never passes) and writes zeros for
