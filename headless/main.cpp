@@ -671,21 +671,41 @@ int main(int argc, char** argv) {
         Settings::values.current_gpu_accuracy = Settings::GpuAccuracy::High;
         Settings::values.dma_accuracy.SetValue(Settings::DmaAccuracy::Default);
         Settings::values.memory_layout_mode = Settings::MemoryLayout::Memory_4Gb;
-#if defined(PS5_NATIVE) && defined(EDEN_PS5_VULKAN)
-        // Settings::values survives the launcher between games. Reset Vulkan extension
-        // settings on EVERY launch: a workaround for one title must not carry over.
-        // The known desktop RADV workaround for Pokemon Legends Z-A is EDS2 with
-        // vertex input dynamic state disabled (eden-emulator/Issue-Reports#481).
-        bool pokemon_za_compat = true;
+#if defined(PS5_NATIVE) && defined(EDEN_PS5_OPENGL)
+        // Per-game compatibility preferences, without persisting changes to the
+        // user's Video/Performance settings. Each launch recomputes the policy.
+        [[maybe_unused]] bool pokemon_za_compat = true;
+        bool fast_rmx_compat = true;
         {
-            // Escape hatch for PS5 Mesa variants where the desktop workaround fails:
-            // place 'pokemon_za=off' in the installed app's compatibility.txt.
             std::ifstream config(Eden::AppFile("compatibility.txt"));
             for (std::string option; config >> option;) {
                 if (option == "pokemon_za=off") pokemon_za_compat = false;
                 else if (option == "pokemon_za=on") pokemon_za_compat = true;
+                else if (option == "fast_rmx=off") fast_rmx_compat = false;
+                else if (option == "fast_rmx=on") fast_rmx_compat = true;
             }
         }
+        const auto fast_rmx_profile = Eden::Compatibility::ForFastRmx(game_title, fast_rmx_compat);
+        // Reset the GC mode between games: otherwise a Fast RMX session would
+        // leave the aggressive policy on for the next title in the launcher.
+        Eden::Performance::gc_keep_dirty.store(!fast_rmx_profile.early_dirty_eviction,
+                                               std::memory_order_relaxed);
+#ifndef EDEN_DEV_PROFILE
+        Eden::Performance::texture_budget_log.store(fast_rmx_profile.enabled,
+                                                    std::memory_order_relaxed);
+#endif
+        if (fast_rmx_profile.use_conservative_vram)
+            Settings::values.vram_usage_mode.SetValue(Settings::VramUsageMode::Conservative);
+        if (game_title == Eden::Compatibility::kFastRmx) {
+            Eden::Report("compatibility", fast_rmx_profile.enabled ?
+                "Fast RMX: low-memory mode: 1x/1080p ceiling, early dirty-image eviction, conservative VRAM, framegen off" :
+                "Fast RMX: low-memory mode disabled (compatibility.txt)");
+        }
+#endif
+#if defined(PS5_NATIVE) && defined(EDEN_PS5_VULKAN)
+        // The known desktop RADV workaround for Pokemon Legends Z-A is EDS2 with
+        // vertex input dynamic state disabled (eden-emulator/Issue-Reports#481).
+        // Reset these values on every launch so a prior title's setting never leaks.
         const auto vk_profile = Eden::Compatibility::ForGame(
             game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_compat);
         Settings::values.dyna_state.SetValue(Settings::ExtendedDynamicState::EDS2);
@@ -890,7 +910,8 @@ int main(int argc, char** argv) {
                 Settings::ScalingFilter::NearestNeighbor};
             // Settings > Video, with what the game does differently (Library > Game settings > Video).
             const auto video = Eden::PreferencesFor(eden_game_title_id(guest));
-            const int resolution = video.resolution;
+            const int resolution = fast_rmx_profile.enabled ?
+                std::min(video.resolution, fast_rmx_profile.resolution_ceiling) : video.resolution;
             const int filter = video.upscaling_filter;
             Settings::values.resolution_setup.SetValue(resolutions[resolution]);
             Settings::values.scaling_filter.SetValue(filters[filter]);
@@ -926,8 +947,9 @@ int main(int argc, char** argv) {
                 (void)(frame_gen_file >> override_multiplier);
                 if (override_rate > 0) target = override_rate;
                 if (override_multiplier >= 2) multiplier = override_multiplier;
-                const bool active = (override_rate >= 0 || override_multiplier >= 0 || video.frame_gen) &&
-                                    video.backend == Eden::GraphicsBackend::Vulkan;
+                const bool active = !fast_rmx_profile.disable_frame_generation &&
+                                    (override_rate >= 0 || override_multiplier >= 0 || video.frame_gen) &&
+                                    backend == Eden::GraphicsBackend::Vulkan;
                 Settings::values.frame_gen.SetValue(active);
                 Settings::values.frame_gen_target_rate.SetValue(
                     active ? static_cast<unsigned>(std::min(target, 240)) : 0u);
@@ -970,11 +992,13 @@ int main(int argc, char** argv) {
             Eden::Display::game_millihertz.store(60000);
             Eden::Display::skipped_frames.store(0);
             // The size of the picture the session puts out (Settings > Video > Output resolution).
-            Eden::Display::output_width.store(Eden::kOutputWidth[video.output]);
-            Eden::Display::output_height.store(Eden::kOutputHeight[video.output]);
+            const int output = fast_rmx_profile.enabled ?
+                std::min(video.output, fast_rmx_profile.output_ceiling) : video.output;
+            Eden::Display::output_width.store(Eden::kOutputWidth[output]);
+            Eden::Display::output_height.store(Eden::kOutputHeight[output]);
             Eden::Report("launch", (std::string("Resolution ") + Eden::kResolutionKeys[resolution] + ", " +
                                     Eden::kUpscalingFilterLabels[filter] + ", output " +
-                                    Eden::kOutputKeys[video.output] + ", " + Eden::kRefreshKeys[refresh] +
+                                    Eden::kOutputKeys[output] + ", " + Eden::kRefreshKeys[refresh] +
                                     " Hz").c_str());
             // Speed against accuracy ("performance" in the settings file, settings_store.h): each
             // one is off unless chosen there, for every game or for this one. The levels start
