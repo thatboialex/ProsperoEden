@@ -675,17 +675,26 @@ int main(int argc, char** argv) {
         // Per-game compatibility preferences, without persisting changes to the
         // user's Video/Performance settings. Each launch recomputes the policy.
         [[maybe_unused]] bool pokemon_za_compat = true;
+        bool pokemon_za_perf = true;
         bool fast_rmx_compat = true;
         {
             std::ifstream config(Eden::AppFile("compatibility.txt"));
             for (std::string option; config >> option;) {
                 if (option == "pokemon_za=off") pokemon_za_compat = false;
                 else if (option == "pokemon_za=on") pokemon_za_compat = true;
+                else if (option == "pokemon_za_perf=off") pokemon_za_perf = false;
+                else if (option == "pokemon_za_perf=on") pokemon_za_perf = true;
                 else if (option == "fast_rmx=off") fast_rmx_compat = false;
                 else if (option == "fast_rmx=on") fast_rmx_compat = true;
             }
         }
         const auto fast_rmx_profile = Eden::Compatibility::ForFastRmx(game_title, fast_rmx_compat);
+        const auto za_perf_profile = Eden::Compatibility::ForPokemonZAPerformance(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_perf);
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA)
+            Eden::Report("compatibility", za_perf_profile.enabled ?
+                "Pokemon Legends Z-A: async shaders, internal rendering capped at 1x (output unchanged)" :
+                "Pokemon Legends Z-A: performance profile off (compatibility.txt)");
         // Reset the GC mode between games: otherwise a Fast RMX session would
         // leave the aggressive policy on for the next title in the launcher.
         Eden::Performance::gc_keep_dirty.store(!fast_rmx_profile.early_dirty_eviction,
@@ -913,7 +922,9 @@ int main(int argc, char** argv) {
             // Settings > Video, with what the game does differently (Library > Game settings > Video).
             const auto video = Eden::PreferencesFor(eden_game_title_id(guest));
             const int resolution = fast_rmx_profile.enabled ?
-                std::min(video.resolution, fast_rmx_profile.resolution_ceiling) : video.resolution;
+                std::min(video.resolution, fast_rmx_profile.resolution_ceiling) :
+                za_perf_profile.enabled ? std::min(video.resolution, za_perf_profile.resolution_ceiling) :
+                video.resolution;
             const int filter = video.upscaling_filter;
             Settings::values.resolution_setup.SetValue(resolutions[resolution]);
             Settings::values.scaling_filter.SetValue(filters[filter]);
@@ -1006,7 +1017,8 @@ int main(int argc, char** argv) {
             // one is off unless chosen there, for every game or for this one. The levels start
             // every session at their exact values (above), so one that is not chosen is off.
             const auto speed = Eden::LoadPerformance(eden_game_title_id(guest));
-            Settings::values.use_asynchronous_shaders = speed.async_shaders;
+            Settings::values.use_asynchronous_shaders =
+                speed.async_shaders || za_perf_profile.asynchronous_shaders;
             if (speed.fast_gpu) {
                 // Nothing calls UpdateGPUAccuracy() here; set the live value too.
                 Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);
