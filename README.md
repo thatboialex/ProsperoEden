@@ -65,6 +65,15 @@ The complete ProsperoEden source is in this repository: the PS5 frontend and lau
 - **Controller type per game** - some games take a Pro Controller and then only work with another controller. In **Library > Game settings > Controls**, **Controller type** gives the game a Pro Controller, the Handheld controller, Dual Joy-Cons, a Left Joy-Con or a Right Joy-Con. Left on **Automatic**, the game gets what it takes, a Pro Controller first.
 - **Typing text** - when a game asks for text (a character's name, an answer during an event), the PS5's own on-screen keyboard opens, and what you enter goes to the game. A USB or Bluetooth keyboard the PS5 supports types into it too.
 
+## Pokémon Legends: Z-A (experimental)
+
+This PS5 port has not been verified to run Pokémon Legends: Z-A. For the
+Switch release (Title ID `0100F43008C44000`), the Vulkan backend now applies
+a title-specific RADV graphics workaround reported by desktop Eden users:
+EDS2 with vertex input dynamic state disabled. It can be switched off via an
+app-side `compatibility.txt` file if PS5 Mesa reacts differently. **See
+[the testing, cheats and troubleshooting guide](docs/POKEMON_ZA.md)**.
+
 ## Install
 
 > [!TIP]
