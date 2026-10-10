@@ -1,6 +1,7 @@
 # Pokémon Legends: Z-A on ProsperoEden (experimental)
 
-**Status: user reports successful PS5 gameplay without the original Vulkan graphics corruption,\nbut intermittent stuttering remains.** The stability and frame-rate improvements
+**Status: user reports successful PS5 gameplay without the original Vulkan graphics corruption,
+but intermittent stuttering remains.** The stability and frame-rate improvements
 are experimental and are not a guarantee of sustained performance.
 
 ## Vulkan rendering fix
