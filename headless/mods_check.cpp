@@ -4,6 +4,7 @@
 // game's mods folder (mods.h), the names it switches off (settings_store.h), and the cheats chosen
 // one by one (cheats.h) as Eden's own parser reads them.
 #include "mods.h"
+#include "cheat_text.h"
 #include "settings_store.h"
 
 #include <array>
@@ -279,13 +280,21 @@ struct VmTestCallbacks final : Core::Memory::DmntCheatVm::Callbacks {
 
 void check_cheat_vm_executes() {
     const Core::Memory::TextCheatParser parser;
-    const auto entries = parser.Parse(
-        "[Direct write]\n"
-        "04000000 00000018 0000002A\n"
+    const auto dirty = std::string("\xEF\xBB\xBF") +
+        "# metadata ignored by the VM\n"
+        "// downloaded collection notes\n"
+        "[Direct write # label] // comment after heading\n"
+        "04000000 00000018 0000002A // write 42\n"
         "[Pointer chain]\n"
         "580F0000 00000040\n"
+        "; comment inside the code section\n"
         "780F0000 00000008\n"
-        "640F0000 00000000 0001869F\n");
+        "640F0000 00000000 0001869F # write 99999\n";
+    const auto normalized = Eden::Cheats::NormalizeText(dirty);
+    require(normalized.find("metadata ignored") == std::string::npos &&
+            normalized.find("[Direct write # label]") != std::string::npos,
+            "comment normalization preserves cheat names, discards annotations");
+    const auto entries = parser.Parse(normalized);
     require(entries.size() == 3 && entries[1].enabled && entries[2].enabled,
             "direct and pointer cheats parsed and enabled");
     auto callbacks = std::make_unique<VmTestCallbacks>();
