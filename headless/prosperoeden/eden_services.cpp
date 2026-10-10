@@ -903,6 +903,7 @@ pe::ui::Preferences EdenServices::preferences() {
     result.reactive_flushing = speed.reactive_flushing;
     result.skip_invalidation = speed.skip_invalidation;
     result.mapping = saved.mapping;
+    result.shortcuts = saved.shortcuts;
     return result;
 }
 
@@ -928,6 +929,7 @@ bool EdenServices::set_preferences(const pe::ui::Preferences& preferences) {
     value.high_contrast = preferences.high_contrast;
     value.reduce_motion = preferences.reduce_motion;
     value.mapping = preferences.mapping;
+    value.shortcuts = preferences.shortcuts;
     Eden::PerformanceSettings speed = Eden::LoadPerformance(0);
     speed.block_list = preferences.block_list;
     speed.async_shaders = preferences.async_shaders;
