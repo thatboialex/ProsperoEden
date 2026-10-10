@@ -74,6 +74,16 @@ EDS2 with vertex input dynamic state disabled. It can be switched off via an
 app-side `compatibility.txt` file if PS5 Mesa reacts differently. **See
 [the testing, cheats and troubleshooting guide](docs/POKEMON_ZA.md)**.
 
+## Fast RMX shared-memory mitigation (experimental)
+
+Fast RMX (Switch Title ID `01009510001CA000`) uses a **reversible,
+title-specific memory-saving mode**: 1x maximum internal resolution, 1080p
+maximum output, frame generation off, conservative VRAM budget and earlier
+texture eviction. Five-second `EDEN_RMX_MEMORY` lines help diagnose
+persistent out-of-memory failures. **This is unverified on a real PS5;** see
+[Fast RMX testing and logs](docs/FAST_RMX.md). `compatibility.txt` beside
+`eboot.bin` with `fast_rmx=off` disables the experiment.
+
 ## Install
 
 > [!TIP]
