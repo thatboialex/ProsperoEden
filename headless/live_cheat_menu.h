@@ -27,11 +27,13 @@ inline std::u16string CheatDialogText(const std::string& value) {
 inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title_id,
                              const std::atomic<bool>& stopped) {
     if (!system.IsPoweredOn() || stopped.load()) return;
+    Report("cheats", "CHEAT_MENU_V2: pausing guest and opening native PS5 selector");
     pad.SetCheatMenuOpen(true);
     system.Pause();
     SCOPE_EXIT {
         if (system.IsPoweredOn() && system.IsPaused()) system.Run();
         pad.SetCheatMenuOpen(false);
+        Report("cheats", "CHEAT_MENU_V2: guest resumed, selector closed");
     };
     const auto all_mods = Mods::List(AssetsPath("mods"), title_id);
     std::vector<std::size_t> available;
@@ -59,6 +61,8 @@ inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title
         request.placeholder = CheatDialogText(available.empty()
             ? "0 Resume" : "1 Toggle  2 Next  3 Previous  0 Resume");
         const TextAnswer answer = AskSystemKeyboard(request, stopped);
+        if (answer.outcome == TextOutcome::unavailable)
+            Report("cheats", "CHEAT_MENU_V2: native PS5 keyboard not available; closing selector");
         if (answer.outcome != TextOutcome::accepted || answer.text.empty() || answer.text[0] == u'0')
             break;
         just_changed = false;
