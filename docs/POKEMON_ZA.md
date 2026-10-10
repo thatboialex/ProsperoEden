@@ -1,8 +1,7 @@
 # Pokémon Legends: Z-A on ProsperoEden (experimental)
 
-**Status: PS5 gameplay has NOT been verified.** The following is a graphics
-compatibility experiment, not a guarantee that the game boots, plays correctly,
-or reaches its target frame rate.
+**Status: user reports successful PS5 gameplay without the original Vulkan graphics corruption,\nbut intermittent stuttering remains.** The stability and frame-rate improvements
+are experimental and are not a guarantee of sustained performance.
 
 ## Vulkan rendering fix
 
@@ -25,6 +24,28 @@ pokemon_za=off
 
 Delete the line or set `pokemon_za=on` to retry the workaround. Restart
 ProsperoEden after changing the file.
+
+## Gameplay performance profile
+
+The PS5 framebuffer and GPU shader compiler can cause pauses even when the
+rendering corruption has been resolved. The per-title Vulkan performance profile
+now limits **internal** rendering to 1x and ensures asynchronous shaders are on.
+Your selected TV **output** resolution stays unchanged, with the selected upscale
+filter handling the difference; it does not alter the EDS2/vertex-input graphics
+fix. The frame-rate target is unchanged. The first playthrough can still pause
+when a shader has not yet been compiled; a warmed cache may be smoother.
+
+This profile is on by default for this title on Vulkan only. To compare with your
+prior configuration while **keeping the graphics fix**, place this in the app's
+`compatibility.txt` and restart:
+
+```text
+pokemon_za_perf=off
+```
+
+Set `pokemon_za_perf=on` to re-enable. For continued hitching, compare the
+`EDEN_VULKAN_FRAME` worst-frame intervals and shader-cache warmup between two
+play sessions before changing global settings.
 
 ## Files and cheats
 
@@ -58,3 +79,17 @@ or poor FPS. Those are different problems requiring different fixes.
 
 This change does not include any Nintendo game, keys, firmware, ROMs, cheats,
 or copyrighted assets, and does not claim PS5 compatibility was tested.
+
+## Verifying enabled cheats
+
+The launcher can recognize a cheat file without knowing whether its pointer
+chain points to live game memory. A game using cheats now reports a short
+`cheat-vm` line on the first engine cycle and about every five seconds.
+`entries` counts registered entries (including any default/master slot),
+`enabled` counts those with code selected, `opcodes` counts executable code
+words, and `writes` counts successful guest-memory writes. `rejected_reads`,
+`rejected_writes`, or `failed_writes` indicate invalid/unwritable target
+addresses or a version-specific cheat that cannot reach its pointer chain.
+These are useful diagnostics, not proof that a game's own value changed as
+intended. For version-dependent cheats prefer the folder form with a filename
+matching the actual running 16-character Build ID.
