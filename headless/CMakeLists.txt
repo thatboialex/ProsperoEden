@@ -1110,7 +1110,7 @@ eden_patch(cheat_runtime_source "${old_cheat_callback}" "${new_cheat_callback}")
 # remains rejected, so bad pointer chains never become arbitrary host writes.
 eden_patch(cheat_runtime_source
     "    if (process == nullptr || !IsAddressInRange(address) ||\n        !process->GetMemory().IsValidVirtualAddress(address)) {"
-    "    if (process == nullptr || size == 0 ||\n        !process->GetMemory().IsValidVirtualAddressRange(address, size)) {")
+    "    if (process == nullptr || size == 0 || address + size < address ||\n        !process->GetMemory().IsValidVirtualAddressRange(address, size)) {")
 string(PREPEND cheat_runtime_source "#include \"${EDEN_PORT_DIR}/cheat_runtime.h\"\n")
 write_derived("${PORT_BUILD_DIR}/cheat_engine_runtime.cpp" "${cheat_runtime_source}")
 get_target_property(core_sources core SOURCES)
