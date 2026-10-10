@@ -41,8 +41,13 @@ check(main, 'Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog)
       "pause event invokes cheat dialog")
 check(main, 'Eden::ShowPausedGraphics(system, *pad, backend, stop_cheat_dialog);',
       "graphics event invokes live settings selector")
-check(graphics, 'Settings::values.scaling_filter.SetValue(LiveFilterValue(index));',
+check(graphics, '::Settings::values.scaling_filter.SetValue(LiveFilterValue(index));',
       "live Vulkan presentation filter mutation")
+# The global Settings namespace is NOT Eden::Settings: protect the native
+# C++ source from a compile-only failure CI would otherwise discover very late.
+import re
+assert not re.search(r'(?<!:)Settings::', graphics), (
+    "Graphics dialog must use ::Settings:: inside namespace Eden")
 check(graphics, 'system.Pause();', "graphics menu pauses guest")
 check(graphics, 'system.Run();', "graphics menu resumes guest")
 check(menu, 'system.Pause();', "guest pause")
