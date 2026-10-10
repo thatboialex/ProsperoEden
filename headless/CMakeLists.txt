@@ -1231,7 +1231,10 @@ eden_patch(patch_source "std::copy(res->begin(), res->end(), std::back_inserter(
     "Eden::Cheats::Append(out, *res, subdir->GetName());")
 eden_patch(patch_source "std::copy(res.begin(), res.end(), std::back_inserter(out));"
     "Eden::Cheats::Append(out, res, name);")
-string(PREPEND patch_source "#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
+eden_patch(patch_source
+    "parser.Parse(std::string_view(reinterpret_cast<const char*>(data.data()), data.size()))"
+    "parser.Parse(Eden::Cheats::NormalizeText(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())))")
+string(PREPEND patch_source "#include \"${EDEN_PORT_DIR}/cheat_text.h\"\n#include \"${EDEN_PORT_DIR}/cheats.h\"\n")
 write_derived("${PORT_BUILD_DIR}/patch_manager.cpp" "${patch_source}")
 get_target_property(core_sources core SOURCES)
 list(REMOVE_ITEM core_sources file_sys/ips_layer.cpp file_sys/patch_manager.cpp)
