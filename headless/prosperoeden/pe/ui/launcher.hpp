@@ -370,6 +370,7 @@ class Launcher
     ListView settings_;
     tween::Spring section_;
     int option_ = 0;
+    bool controls_from_game_ = false; // reopen that game\x27s Controls after global shortcut editing
     tween::Spring option_cursor_; // highlight position in pixels
     std::array<tween::Spring, 7> switches_{};
     ListView video_rows_; // the Video dialog's rows (more than it shows)
