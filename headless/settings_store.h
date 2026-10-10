@@ -50,6 +50,7 @@
 #include <nlohmann/json.hpp>
 
 #include "button_mapping.h"
+#include "shortcut_chords.h"
 #include "storage_paths.h"
 
 namespace Eden {
@@ -122,6 +123,7 @@ struct Preferences {
     bool high_contrast = false;
     bool reduce_motion = false;
     ButtonMapping mapping = kDefaultMapping;  // Settings > Controls > Button mapping
+    std::array<int, 3> shortcuts = kDefaultShortcuts; // return, FPS, pause/cheats
     int controller = -1;                 // a game's own Controller type (kControllerKeys); -1: automatic
     bool immediate_logs = false;         // Settings > Diagnostics: log lines written as they come
 };
@@ -357,6 +359,12 @@ inline Preferences LoadPreferences(const std::string& file = SettingsFile()) {
     result.high_contrast = Settings::Bool(document, Json::json_pointer("/accessibility/high_contrast"), false);
     result.reduce_motion = Settings::Bool(document, Json::json_pointer("/accessibility/reduce_motion"), false);
     result.mapping = Settings::Mapping(document, Json::json_pointer("/controls/mapping"), kDefaultMapping);
+    for (int i = 0; i < 3; ++i) {
+        const auto key = Json::json_pointer(std::string("/controls/shortcuts/") + kShortcutActionKeys[i]);
+        result.shortcuts[i] = KeyIndex(Settings::String(document, key), kShortcutKeys,
+                                       int(std::size(kShortcutKeys)), kDefaultShortcuts[i]);
+    }
+    if (!ValidShortcuts(result.shortcuts)) result.shortcuts = kDefaultShortcuts;
     return result;
 }
 
@@ -368,7 +376,7 @@ inline bool SavePreferences(const Preferences& value, const std::string& file = 
         value.refresh < 0 || value.refresh >= int(std::size(kRefreshKeys)) ||
         value.output < 0 || value.output >= int(std::size(kOutputKeys)) ||
         value.language < 0 || value.language >= int(std::size(kLanguageKeys)) ||
-        !ValidMapping(value.mapping)) return false;
+        !ValidMapping(value.mapping) || !ValidShortcuts(value.shortcuts)) return false;
     Settings::Json document = Settings::Load(file);
     document["version"] = 1;
     document["video"]["renderer"] = value.backend == GraphicsBackend::Vulkan ? "vulkan" : "opengl";
@@ -384,6 +392,8 @@ inline bool SavePreferences(const Preferences& value, const std::string& file = 
     document["audio"]["mute"] = value.mute;
     document["audio"]["menu_volume"] = value.menu_volume;
     document["controls"]["vibration"] = value.vibration;
+    for (int i = 0; i < 3; ++i)
+        document["controls"]["shortcuts"][kShortcutActionKeys[i]] = kShortcutKeys[value.shortcuts[i]];
     if (value.mapping == kDefaultMapping) document["controls"].erase("mapping");
     else document["controls"]["mapping"] = Settings::MappingJson(value.mapping);
     document["system"]["language"] = kLanguageKeys[value.language];
