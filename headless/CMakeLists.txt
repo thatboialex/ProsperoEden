@@ -2196,6 +2196,9 @@ else()
     # So is the check of the cheat files' entries (patch_library.h).
     add_executable(eden-patch-library-check "${EDEN_PORT_DIR}/patch_library_check.cpp")
     target_compile_options(eden-patch-library-check PRIVATE -UNDEBUG)
+    # PS5 Vulkan per-title workaround stays scoped to Z-A (game_compatibility.h).
+    add_executable(eden-game-compatibility-check "${EDEN_PORT_DIR}/game_compatibility_check.cpp")
+    target_compile_options(eden-game-compatibility-check PRIVATE -UNDEBUG)
     add_executable(eden-devices-check "${EDEN_PORT_DIR}/devices_check.cpp")
     target_link_libraries(eden-devices-check PRIVATE core eden-pad eden-device-mock)
     target_compile_options(eden-devices-check PRIVATE -fno-rtti)
