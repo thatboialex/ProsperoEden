@@ -280,12 +280,12 @@ struct VmTestCallbacks final : Core::Memory::DmntCheatVm::Callbacks {
 void check_cheat_vm_executes() {
     const Core::Memory::TextCheatParser parser;
     const auto entries = parser.Parse(
-        "[Direct write]\\n"
-        "04000000 00000018 0000002A\\n"
-        "[Pointer chain]\\n"
-        "580F0000 00000040\\n"
-        "780F0000 00000008\\n"
-        "640F0000 00000000 0001869F\\n");
+        "[Direct write]\n"
+        "04000000 00000018 0000002A\n"
+        "[Pointer chain]\n"
+        "580F0000 00000040\n"
+        "780F0000 00000008\n"
+        "640F0000 00000000 0001869F\n");
     require(entries.size() == 3 && entries[1].enabled && entries[2].enabled,
             "direct and pointer cheats parsed and enabled");
     auto callbacks = std::make_unique<VmTestCallbacks>();
