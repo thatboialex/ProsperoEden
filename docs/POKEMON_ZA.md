@@ -48,6 +48,42 @@ Set `pokemon_za_perf=on` to re-enable. For continued hitching, compare the
 `EDEN_VULKAN_FRAME` worst-frame intervals and shader-cache warmup between two
 play sessions before changing global settings.
 
+## Intermittent background building or prop popping
+
+**Still experimental; not confirmed fixed.** User PS5 testing shows that the
+EDS2/static vertex-input workaround eliminates severe scene corruption but a
+building section may still disappear/reappear in Lumiose City. A single still
+cannot distinguish incorrect query-based culling from stale guest memory,
+geometry depth flicker, or asset streaming. Upstream Eden release notes also
+warn that invisible objects/flickering can remain after vertex-input fixes.
+
+The PS5 Vulkan backend includes two different host conditional-rendering
+paths. The default is the faster query-based one; an existing exact
+CPU-evaluated predicate mode avoids relying on pending GPU query results.
+To compare *only* that source of geometry popping, put:
+
+```text
+pokemon_za_predication=cpu
+```
+
+in `compatibility.txt` next to `eboot.bin`, then restart the emulator. This
+option affects only Pokémon Z-A on Vulkan. It does **not** disable EDS2 or
+re-enable vertex-input dynamic state. CPU readbacks may introduce more frame
+stutter; this is a diagnostic A/B option, not a verified fix.
+
+If it does not resolve the disappearing building, set
+`pokemon_za_predication=default` to restore the original renderer. Also
+compare Library → Game settings → Performance with **Fast GPU OFF**,
+**Unsafe DMA OFF**, and **Skip invalidation OFF** (GPU High, default DMA).
+These options can affect freshness of guest GPU state but their impact on
+this exact scene is not yet established.
+
+Capture a 10-second clip from a stationary camera and one while panning
+slowly, including the same arch/building wall. If it disappears according to
+viewing angle rather than shimmering while stationary, investigate guest
+occlusion/conditional rendering first; if it flickers while stationary,
+investigate depth writes, shader/texture aliasing and the Vulkan driver.
+
 ## Files and cheats
 
 Use your own legally dumped **Nintendo Switch** edition of the game and
