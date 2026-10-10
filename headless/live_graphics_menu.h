@@ -16,15 +16,15 @@
 #endif
 
 namespace Eden {
-inline Settings::ScalingFilter LiveFilterValue(int index) {
+inline ::Settings::ScalingFilter LiveFilterValue(int index) {
     switch (index) {
-    case 0: return Settings::ScalingFilter::Bilinear;
-    case 1: return Settings::ScalingFilter::Fsr;
-    case 2: return Settings::ScalingFilter::Bicubic;
-    default: return Settings::ScalingFilter::NearestNeighbor;
+    case 0: return ::Settings::ScalingFilter::Bilinear;
+    case 1: return ::Settings::ScalingFilter::Fsr;
+    case 2: return ::Settings::ScalingFilter::Bicubic;
+    default: return ::Settings::ScalingFilter::NearestNeighbor;
     }
 }
-inline int LiveFilterIndex(Settings::ScalingFilter value) {
+inline int LiveFilterIndex(::Settings::ScalingFilter value) {
     for (int i = 0; i < 4; ++i)
         if (LiveFilterValue(i) == value) return i;
     return 0;
@@ -51,7 +51,7 @@ inline void ShowPausedGraphics(Core::System& system, Pad& pad, GraphicsBackend b
         request.numbers = true;
         request.max_length = 1;
         const bool supported = backend == GraphicsBackend::Vulkan;
-        const int current = LiveFilterIndex(Settings::values.scaling_filter.GetValue());
+        const int current = LiveFilterIndex(::Settings::values.scaling_filter.GetValue());
         std::string title = supported ?
             std::string("PAUSED - Live filter: ") + kUpscalingFilterLabels[current] :
             "PAUSED - Live filter changes require Vulkan";
@@ -74,7 +74,7 @@ inline void ShowPausedGraphics(Core::System& system, Pad& pad, GraphicsBackend b
         // The Vulkan present layer reads the filter on each render and rebuilds
         // the window-adapt pipeline if it changed. Unlike resolution scaling,
         // the underlying guest render targets do not need reallocation.
-        Settings::values.scaling_filter.SetValue(LiveFilterValue(index));
+        ::Settings::values.scaling_filter.SetValue(LiveFilterValue(index));
         Report("graphics", (std::string("LIVE_GRAPHICS_V1: present filter -> ") +
                              kUpscalingFilterLabels[index]).c_str());
         changed = true;
