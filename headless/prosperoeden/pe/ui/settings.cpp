@@ -4,6 +4,7 @@
 
 #include "pe/ui/launcher.hpp"
 #include "shortcut_chords.h"
+#include "controls_menu_layout.h"
 
 #include <algorithm>
 #include <string>
@@ -208,7 +209,7 @@ void Launcher::draw_settings(Canvas &c)
         prefs_.async_shaders || prefs_.fast_gpu || prefs_.unsafe_cpu || prefs_.unsafe_dma ||
                 !prefs_.reactive_flushing || prefs_.skip_invalidation ? tr("On") : "",
         prefs_.mute ? tr("Muted") : percent(prefs_.volume),
-        prefs_.vibration ? tr("Vibration on") : tr("Vibration off"),
+        std::string(tr("Pause: ")) + Eden::kShortcutLabels[prefs_.shortcuts[2]],
         prefs_.large_text || prefs_.high_contrast || prefs_.reduce_motion ? tr("On") : "",
         prefs_.detailed_logging ? tr("Detailed logs on") : prefs_.immediate_logs ? tr("On") : "",
         "",
@@ -293,11 +294,12 @@ void Launcher::draw_settings(Canvas &c)
                  {tr("MENU SOUNDS"), prefs_.menu_volume > 0 ? percent(prefs_.menu_volume) : tr("Off")}};
         break;
     case kControls:
-        about = tr("Vibration, button mapping and the shortcuts during a game.");
+        about = tr("Press Cross to customize the shortcuts used during gameplay.");
         lines = {{tr("VIBRATION"), on_off(prefs_.vibration)},
                  {tr("BUTTON MAPPING"), prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed")},
-                 {tr("END GAME"), std::string(tr("Touchpad")) + " + L1"},
-                 {tr("FPS OVERLAY"), std::string(tr("Touchpad")) + " + R1"}};
+                 {tr("RETURN TO LIBRARY"), Eden::kShortcutLabels[prefs_.shortcuts[0]]},
+                 {tr("FPS OVERLAY"), Eden::kShortcutLabels[prefs_.shortcuts[1]]},
+                 {tr("PAUSE / CHEATS"), Eden::kShortcutLabels[prefs_.shortcuts[2]]}};
         break;
     case kAccessibility:
         about = tr("Make the menu easier to see and follow.");
@@ -407,7 +409,7 @@ int Launcher::dialog_rows(Modal modal) const
                         !games_[static_cast<std::size_t>(library_.selected)].sources.empty() &&
                         !games_[static_cast<std::size_t>(library_.selected)].remote ? 1 : 0);
     case Modal::controls:     // vibration, mapping, library/FPS/cheat shortcuts
-        return 5;
+        return Eden::ControlsMenu::kRowCount;
     case Modal::diagnostics:  // detailed logging, logs written at once
         return 2;
     default:
@@ -429,7 +431,7 @@ float Launcher::dialog_row_top(Modal modal, int row) const
     case Modal::game:
         return 334.0f + 96.0f * static_cast<float>(row);
     case Modal::controls:
-        return 400.0f + 94.0f * static_cast<float>(row);
+        return Eden::ControlsMenu::RowTop(row);
     case Modal::diagnostics: // under the setup's state
         return 500.0f + 102.0f * static_cast<float>(row);
     default:
@@ -612,7 +614,7 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         break;
     case Modal::controls:
         title = tr("Controls");
-        copy = tr("Controller shortcuts and supported features.");
+        copy = tr("Choose a shortcut below, use Left/Right or Cross, and restart the game.");
         break;
     case Modal::accessibility:
         title = tr("Accessibility");
@@ -842,17 +844,23 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
 
     // Under the rows: Video's five, and Performance's four with their line of text, end lower
     // than the other dialogs' three.
-    const float foot = scrolls ? 848.0f : 811.0f;
+    const float foot = (scrolls || modal == Modal::controls) ? 848.0f : 811.0f;
     if (!message_.empty())
     {
         notice(c, message_, 592.0f, foot + 7.0f, theme::kSmall,
                message_warning_ ? theme::kWarning : theme::kLimePale, 736.0f, message_warning_);
     }
-    else if (modal == Modal::controls && option_ == 1)
+    else if (modal == Modal::controls)
     {
-        static constexpr Hint kOpen[] = {
-            {Pad::updown, TR("Select")}, {Pad::cross, TR("Open")}, {Pad::circle, TR("Back")}};
-        draw_hints(c, kOpen, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        if (option_ == 1) {
+            static constexpr Hint kOpen[] = {
+                {Pad::updown, TR("Select")}, {Pad::cross, TR("Open")}, {Pad::circle, TR("Back")}};
+            draw_hints(c, kOpen, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        } else {
+            static constexpr Hint kChange[] = {
+                {Pad::updown, TR("Select")}, {Pad::leftright, TR("Change")}, {Pad::circle, TR("Back")}};
+            draw_hints(c, kChange, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        }
     }
     else if (rows > 1)
     {
