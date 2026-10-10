@@ -142,6 +142,13 @@ jobs:
           /tmp/eden-game-compatibility-check
           c++ -std=c++20 -Wall -Wextra -Werror headless/shortcut_chords_check.cpp -o /tmp/eden-shortcut-chords-check
           /tmp/eden-shortcut-chords-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/controls_menu_check.cpp -o /tmp/eden-controls-menu-check
+          /tmp/eden-controls-menu-check
+          c++ -std=c++20 -Wall -Wextra -Werror headless/shortcut_dispatch_check.cpp -o /tmp/eden-shortcut-dispatch-check
+          /tmp/eden-shortcut-dispatch-check
+          python3 tools/check-shortcut-ui-wiring.py
+          c++ -std=c++20 -Wall -Wextra -Werror headless/cheat_text_check.cpp -o /tmp/eden-cheat-text-check
+          /tmp/eden-cheat-text-check
           c++ -std=c++20 -Wall -Wextra -Werror headless/cheat_runtime_check.cpp -o /tmp/eden-cheat-runtime-check
           /tmp/eden-cheat-runtime-check
           c++ -std=c++20 -Wall -Wextra -Werror headless/fast_rmx_gc_check.cpp -o /tmp/eden-fast-rmx-gc-check

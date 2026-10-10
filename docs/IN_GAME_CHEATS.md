@@ -1,6 +1,6 @@
 # In-game pause, cheats, and controller shortcuts (PS5)
 
-The game menu now has three independent remappable two-button shortcuts in
+The game menu now has four independent remappable two-button shortcuts in
 **Settings → Controls**. Highlight an action and use Left/Right or Cross to
 cycle the chord. If you choose another action's chord, they swap instead of
 colliding. The choices are saved with your launcher's profile and take effect
@@ -11,8 +11,47 @@ on the next game launch.
 | Leave game for library | Touchpad + L1 |
 | Show/hide FPS counter | Touchpad + R1 |
 | Pause and manage cheats | Touchpad + Options |
+| Pause and adjust live graphics filters | Create + Options |
 
 Other choices: Create + L1, Create + R1, Create + Options.
+
+## Finding and editing all four shortcuts
+
+Open **Settings → Controls** (Cross). The right-side Settings overview shows
+the exact saved Return, FPS, Pause/Cheats, and Live graphics combinations.
+The expanded Controls screen includes **six visible rows** (Vibration, Button
+mapping and four editable actions). Highlight one of the shortcut rows and
+press Left/Right or Cross to cycle it; choosing an occupied chord swaps
+its assignment rather than creating conflicting shortcuts. Restart your
+running game to pick up the saved changes.
+
+You can also navigate **Library → Game settings → Controls** and select
+**Pause / Cheats shortcut** or **Live graphics shortcut** to open the same
+global editor, returning to your game-specific settings with Circle.
+
+### Live graphics while a game is running
+
+Default: **Create + Options** (hold Create, then press Options). The game
+pauses and opens a native PS5 numeric dialog. Choose:
+
+- **1** — Bilinear upscaling
+- **2** — AMD FSR
+- **3** — Bicubic
+- **4** — Nearest neighbor
+- **0** or cancel — resume gameplay
+
+The choice changes the **Vulkan presentation filter during the current
+session**, without restarting the game. It does **not** change the
+internal-render target resolution or rebuild its texture caches. The
+Vulkan renderer notices and recreates the presentation pass on the next
+frame. Use **Settings → Video** or **Library → Game settings → Video** for
+internal resolution, output resolution, backend, or other changes that need
+a game restart. Live filter selection isn't persisted to your settings.
+
+Keep **Faster GPU emulation**, **Faster CPU emulation**, and **Faster DMA**
+off when checking cheat reliability: the current Mario + Rabbids screenshot
+shows 99,999 coins with those options off and Reactive flushing on. This is
+a correlation, not yet proof which of those settings caused prior issues.
 
 ## How to change cheats without restarting
 

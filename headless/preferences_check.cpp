@@ -167,14 +167,15 @@ int main() {
     assert(Eden::SavePreferences(controls, file));
     assert(!Eden::LoadPreferences(file).vibration);
     assert(Read(file).find("\"vibration\": false") != std::string::npos);
-    // Three game hotkeys persist with their own action names, without duplicates.
+    // Four game hotkeys persist with their own action names, without duplicates.
     assert(Eden::LoadPreferences(file).shortcuts == Eden::kDefaultShortcuts);
     controls.shortcuts = Eden::AssignShortcut(controls.shortcuts, 2, 0);
     assert(Eden::ValidShortcuts(controls.shortcuts));
     assert(Eden::SavePreferences(controls, file));
     assert(Eden::LoadPreferences(file).shortcuts == controls.shortcuts);
     assert(Read(file).find("touch_l1") != std::string::npos);
-    controls.shortcuts = {0, 0, 1};
+    assert(Read(file).find("\"graphics\"") != std::string::npos);
+    controls.shortcuts = {0, 0, 1, 5};
     assert(!Eden::SavePreferences(controls, file));
     controls.shortcuts = Eden::kDefaultShortcuts;
     assert(Eden::SavePreferences(controls, file));

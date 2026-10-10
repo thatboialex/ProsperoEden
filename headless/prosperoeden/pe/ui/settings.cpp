@@ -4,6 +4,7 @@
 
 #include "pe/ui/launcher.hpp"
 #include "shortcut_chords.h"
+#include "controls_menu_layout.h"
 
 #include <algorithm>
 #include <string>
@@ -208,7 +209,7 @@ void Launcher::draw_settings(Canvas &c)
         prefs_.async_shaders || prefs_.fast_gpu || prefs_.unsafe_cpu || prefs_.unsafe_dma ||
                 !prefs_.reactive_flushing || prefs_.skip_invalidation ? tr("On") : "",
         prefs_.mute ? tr("Muted") : percent(prefs_.volume),
-        prefs_.vibration ? tr("Vibration on") : tr("Vibration off"),
+        std::string(tr("Pause: ")) + Eden::kShortcutLabels[prefs_.shortcuts[2]],
         prefs_.large_text || prefs_.high_contrast || prefs_.reduce_motion ? tr("On") : "",
         prefs_.detailed_logging ? tr("Detailed logs on") : prefs_.immediate_logs ? tr("On") : "",
         "",
@@ -293,11 +294,13 @@ void Launcher::draw_settings(Canvas &c)
                  {tr("MENU SOUNDS"), prefs_.menu_volume > 0 ? percent(prefs_.menu_volume) : tr("Off")}};
         break;
     case kControls:
-        about = tr("Vibration, button mapping and the shortcuts during a game.");
+        about = tr("Press Cross to customize the shortcuts used during gameplay.");
         lines = {{tr("VIBRATION"), on_off(prefs_.vibration)},
                  {tr("BUTTON MAPPING"), prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed")},
-                 {tr("END GAME"), std::string(tr("Touchpad")) + " + L1"},
-                 {tr("FPS OVERLAY"), std::string(tr("Touchpad")) + " + R1"}};
+                 {tr("RETURN TO LIBRARY"), Eden::kShortcutLabels[prefs_.shortcuts[0]]},
+                 {tr("FPS OVERLAY"), Eden::kShortcutLabels[prefs_.shortcuts[1]]},
+                 {tr("PAUSE / CHEATS"), Eden::kShortcutLabels[prefs_.shortcuts[2]]},
+                 {tr("LIVE GRAPHICS"), Eden::kShortcutLabels[prefs_.shortcuts[3]]}};
         break;
     case kAccessibility:
         about = tr("Make the menu easier to see and follow.");
@@ -407,7 +410,7 @@ int Launcher::dialog_rows(Modal modal) const
                         !games_[static_cast<std::size_t>(library_.selected)].sources.empty() &&
                         !games_[static_cast<std::size_t>(library_.selected)].remote ? 1 : 0);
     case Modal::controls:     // vibration, mapping, library/FPS/cheat shortcuts
-        return 5;
+        return Eden::ControlsMenu::kRowCount;
     case Modal::diagnostics:  // detailed logging, logs written at once
         return 2;
     default:
@@ -429,7 +432,7 @@ float Launcher::dialog_row_top(Modal modal, int row) const
     case Modal::game:
         return 334.0f + 96.0f * static_cast<float>(row);
     case Modal::controls:
-        return 400.0f + 94.0f * static_cast<float>(row);
+        return Eden::ControlsMenu::RowTop(row);
     case Modal::diagnostics: // under the setup's state
         return 500.0f + 102.0f * static_cast<float>(row);
     default:
@@ -445,6 +448,14 @@ void Launcher::press_dialog(Key key)
     const int step = key == Key::left ? -1 : 1;
     if (key == Key::circle)
     {
+        if (modal_ == Modal::controls && controls_from_game_) {
+            controls_from_game_ = false;
+            modal_ = modal_shown_ = Modal::game_options;
+            option_ = option_rows_.selected;
+            message_.clear();
+            cue(Cue::back);
+            return;
+        }
         close_modal();
         return;
     }
@@ -544,7 +555,7 @@ void Launcher::press_dialog(Key key)
             if (activate) open_mapping(false);
             return;
         }
-        if (option_ >= 2 && option_ <= 4) {
+        if (option_ >= 2 && option_ <= 5) {
             const int action = option_ - 2;
             const int count = int(std::size(Eden::kShortcutLabels));
             const int next = (prefs_.shortcuts[action] + (step < 0 ? count - 1 : 1)) % count;
@@ -612,7 +623,7 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         break;
     case Modal::controls:
         title = tr("Controls");
-        copy = tr("Controller shortcuts and supported features.");
+        copy = tr("Choose a shortcut below, use Left/Right or Cross, and restart the game.");
         break;
     case Modal::accessibility:
         title = tr("Accessibility");
@@ -638,33 +649,34 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     const int last = scrolls ? rows_view.last_row() : rows - 1;
     if (scrolls)
         list.push_clip({window.x - 24.0f, window.y - 6.0f, window.w + 48.0f, window.h + 12.0f});
+    const float dialog_height = modal == Modal::controls ? Eden::ControlsMenu::kRowHeight : 94.0f;
     for (int row = first; row <= last; ++row)
     {
         list.push_opacity(scrolls ? rows_view.row_alpha(row, kVideoRowHeight) : 1.0f);
-        plate_rest(c, kRowPlate, {592.0f, dialog_row_top(modal, row), 736.0f, 94.0f});
+        plate_rest(c, kRowPlate, {592.0f, dialog_row_top(modal, row), 736.0f, dialog_height});
         list.pop_opacity();
     }
     plate_focus(c, kRowPlate,
                 {592.0f,
                  scrolls ? kVideoRowsTop + rows_view.cursor() - rows_view.scroll() :
                            option_cursor_.value,
-                 736.0f, 94.0f},
+                 736.0f, dialog_height},
                 1.0f);
 
     // A row's name takes what its control (`taken` wide, at the right) leaves of the row.
     const auto label = [&](int row, const char *value, float taken)
     {
-        text_shrink(c, value, 628.0f, baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+        text_shrink(c, value, 628.0f, baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                     theme::kText24, theme::kValue, 664.0f - taken - 28.0f);
     };
     const auto choice = [&](int row, const std::string &value)
     {
         return chooser(c, value, 1296.0f,
-                       baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+                       baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                        row == option_ ? 1.0f : 0.0f, theme::kLimePale);
     };
     constexpr float kToggle = 64.0f;
-    const auto row_centre = [&](int row) { return dialog_row_top(modal, row) + 47.0f; };
+    const auto row_centre = [&](int row) { return dialog_row_top(modal, row) + dialog_height / 2; };
     const float knob = tween::clamp01(switches_[0].value);
 
     switch (modal)
@@ -718,7 +730,7 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         const auto level_row = [&](int row, const char *name, const std::string &value, int level)
         {
             const float shown =
-                text(c, value, 1292.0f, baseline(dialog_row_top(modal, row), 94.0f, theme::kText24),
+                text(c, value, 1292.0f, baseline(dialog_row_top(modal, row), dialog_height, theme::kText24),
                      theme::kText24, theme::kLimePale, Align::right);
             const float gap = std::max(96.0f, shown + 20.0f);
             level_bar(c, 1292.0f - gap, row_centre(row), 260.0f, static_cast<float>(level) / 100.0f,
@@ -738,16 +750,17 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         toggle(c, 1292.0f, row_centre(0), knob);
         const float mapped = text_shrink(c,
             prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed"), 1292.0f,
-            baseline(dialog_row_top(modal, 1), 94.0f, theme::kSmall), theme::kSmall,
+            baseline(dialog_row_top(modal, 1), dialog_height, theme::kSmall), theme::kSmall,
             theme::kLimePale, 345.0f, Align::right);
         label(1, tr("Button mapping"), mapped);
         static constexpr const char* action_names[] = {
-            TR("Return to library"), TR("FPS overlay"), TR("Pause / cheats")};
-        for (int i = 0; i < 3; ++i) {
+            TR("Return to library"), TR("FPS overlay"), TR("Pause / cheats"),
+            TR("Live graphics")};
+        for (int i = 0; i < Eden::kShortcutActionCount; ++i) {
             const int row = i + 2;
             const char* chord = Eden::kShortcutLabels[prefs_.shortcuts[i]];
             const float width = text_shrink(c, chord, 1292.0f,
-                baseline(dialog_row_top(modal, row), 94.0f, theme::kSmall),
+                baseline(dialog_row_top(modal, row), dialog_height, theme::kSmall),
                 theme::kSmall, theme::kLimePale, 410.0f, Align::right);
             label(row, tr(action_names[i]), width);
         }
@@ -842,17 +855,23 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
 
     // Under the rows: Video's five, and Performance's four with their line of text, end lower
     // than the other dialogs' three.
-    const float foot = scrolls ? 848.0f : 811.0f;
+    const float foot = (scrolls || modal == Modal::controls) ? 848.0f : 811.0f;
     if (!message_.empty())
     {
         notice(c, message_, 592.0f, foot + 7.0f, theme::kSmall,
                message_warning_ ? theme::kWarning : theme::kLimePale, 736.0f, message_warning_);
     }
-    else if (modal == Modal::controls && option_ == 1)
+    else if (modal == Modal::controls)
     {
-        static constexpr Hint kOpen[] = {
-            {Pad::updown, TR("Select")}, {Pad::cross, TR("Open")}, {Pad::circle, TR("Back")}};
-        draw_hints(c, kOpen, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        if (option_ == 1) {
+            static constexpr Hint kOpen[] = {
+                {Pad::updown, TR("Select")}, {Pad::cross, TR("Open")}, {Pad::circle, TR("Back")}};
+            draw_hints(c, kOpen, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        } else {
+            static constexpr Hint kChange[] = {
+                {Pad::updown, TR("Select")}, {Pad::leftright, TR("Change")}, {Pad::circle, TR("Back")}};
+            draw_hints(c, kChange, 3, 592.0f, foot, theme::kCopy, 736.0f);
+        }
     }
     else if (rows > 1)
     {

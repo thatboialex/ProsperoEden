@@ -39,6 +39,7 @@
 #include "mods.h"
 #include "game_compatibility.h"
 #include "live_cheat_menu.h"
+#include "live_graphics_menu.h"
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "keyboard_applet.h"
@@ -1155,7 +1156,13 @@ int main(int argc, char** argv) {
             const auto controls = Eden::PreferencesFor(game_title);
             Settings::values.vibration_enabled.SetValue(controls.vibration);
             pad->SetMapping(controls.mapping);
-            pad->SetShortcuts(Eden::LoadPreferences().shortcuts);
+            const auto shortcuts = Eden::LoadPreferences().shortcuts;
+            pad->SetShortcuts(shortcuts);
+            Eden::Report("controls", (std::string("SHORTCUTS_MENU_V2: Return=") +
+                Eden::kShortcutLabels[shortcuts[0]] + ", FPS=" +
+                Eden::kShortcutLabels[shortcuts[1]] + ", Pause/Cheats=" +
+                Eden::kShortcutLabels[shortcuts[2]] + ", Live graphics=" +
+                Eden::kShortcutLabels[shortcuts[3]]).c_str());
             Eden::Report("launch", (std::string("Controls: vibration ") + (controls.vibration ? "on" : "off") +
                                     ", buttons " + (controls.mapping == Eden::kDefaultMapping ? std::string("as usual") :
                                     Eden::Settings::MappingJson(controls.mapping).dump())).c_str());
@@ -1288,6 +1295,7 @@ int main(int argc, char** argv) {
                         pad->Poll();
                         (void)pad->TakeHudToggle();
                         (void)pad->TakePauseCheats();
+                        (void)pad->TakeGraphicsMenu();
 #if defined(EDEN_DEV_PROFILE) || defined(EDEN_DEV_ROM_ID)
                         // The runner's stand-in for the press: its input commands are read only
                         // once the game runs.
@@ -1607,10 +1615,16 @@ int main(int argc, char** argv) {
 #endif
 #ifdef PS5_NATIVE
                         if (game && pad->TakePauseCheats()) {
+                            Eden::Report("controls", "Pause / Cheats shortcut received");
                             Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);
+                        }
+                        if (game && pad->TakeGraphicsMenu()) {
+                            Eden::Report("controls", "Live graphics shortcut received");
+                            Eden::ShowPausedGraphics(system, *pad, backend, stop_cheat_dialog);
                         }
 #else
                         (void)pad->TakePauseCheats();
+                        (void)pad->TakeGraphicsMenu();
 #endif
                         if (pad->TakeReturnToMenu()) {
                             // From here the player is waiting to leave (stop_limit.h).
