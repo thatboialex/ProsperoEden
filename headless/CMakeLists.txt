@@ -2249,6 +2249,8 @@ else()
     add_executable(eden-patch-library-check "${EDEN_PORT_DIR}/patch_library_check.cpp")
     target_compile_options(eden-patch-library-check PRIVATE -UNDEBUG)
     # PS5 Vulkan per-title workaround stays scoped to Z-A (game_compatibility.h).
+    add_executable(eden-cheat-runtime-check "${EDEN_PORT_DIR}/cheat_runtime_check.cpp")
+    target_compile_options(eden-cheat-runtime-check PRIVATE -UNDEBUG)
     add_executable(eden-game-compatibility-check "${EDEN_PORT_DIR}/game_compatibility_check.cpp")
     target_compile_options(eden-game-compatibility-check PRIVATE -UNDEBUG)
     add_executable(eden-fast-rmx-gc-check "${EDEN_PORT_DIR}/fast_rmx_gc_check.cpp")
