@@ -12,6 +12,7 @@
 #include "input_common/drivers/virtual_gamepad.h"
 #include "input_common/input_engine.h"
 #include "button_mapping.h"
+#include "shortcut_chords.h"
 #include "ps5_pad.hpp"
 
 namespace Eden {
