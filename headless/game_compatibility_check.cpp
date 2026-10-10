@@ -19,6 +19,12 @@ int main() {
     assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
     assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
     assert(!ForPokemonZAPerformance(kFastRmx, true).enabled);
+    // CPU predication is a deliberate A/B switch, not a forced graphics workaround.
+    assert(ForPokemonZAPredication(kPokemonLegendsZA, true, true).cpu_predication);
+    assert(ForPokemonZAPredication(kPokemonLegendsZA, true, true).hcr_mode == 2);
+    assert(!ForPokemonZAPredication(kPokemonLegendsZA, true, false).cpu_predication);
+    assert(ForPokemonZAPredication(kPokemonLegendsZA, false, true).hcr_mode == 1);
+    assert(ForPokemonZAPredication(kFastRmx, true, true).hcr_mode == 1);
     // Fast RMX is the only title with conservative memory settings.
     auto rmx = ForFastRmx(kFastRmx);
     assert(rmx.enabled && rmx.resolution_ceiling == 2 && rmx.output_ceiling == 0);
