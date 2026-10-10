@@ -6,8 +6,11 @@
 #include "mods.h"
 #include "settings_store.h"
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
+#include <memory>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -228,6 +231,100 @@ void check_cheats(const fs::path& base) {
             "a long name");
 }
 
+
+// Run real dmnt cheat opcodes against a bounded fake guest address space. This checks
+// more than file discovery: enabled programs must actually write their intended bytes,
+// including a pointer chain, while an unmapped pointer cannot alter guest memory.
+struct VmTestCallbacks final : Core::Memory::DmntCheatVm::Callbacks {
+    static constexpr std::uint64_t Base = 0x80000000ULL;
+    std::array<std::uint8_t, 0x200> ram{};
+    unsigned rejected_reads = 0;
+    unsigned rejected_writes = 0;
+
+    bool mapped(std::uint64_t address, std::uint64_t size) const {
+        return address >= Base && size != 0 && size <= ram.size() &&
+               address - Base <= ram.size() - size;
+    }
+    void MemoryReadUnsafe(VAddr address, void* data, u64 size) override {
+        if (!mapped(address, size)) {
+            ++rejected_reads;
+            std::memset(data, 0, size);
+            return;
+        }
+        std::memcpy(data, ram.data() + (address - Base), size);
+    }
+    void MemoryWriteUnsafe(VAddr address, const void* data, u64 size) override {
+        if (!mapped(address, size)) {
+            ++rejected_writes;
+            return;
+        }
+        std::memcpy(ram.data() + (address - Base), data, size);
+    }
+    u64 HidKeysDown() override { return 0; }
+    void PauseProcess() override {}
+    void ResumeProcess() override {}
+    void DebugLog(u8, u64) override {}
+    void CommandLog(std::string_view) override {}
+    template <typename T> void store(std::uint64_t addr, T value) {
+        require(mapped(addr, sizeof(value)), "test memory store in range");
+        std::memcpy(ram.data() + (addr - Base), &value, sizeof(value));
+    }
+    template <typename T> T load(std::uint64_t addr) const {
+        require(mapped(addr, sizeof(T)), "test memory load in range");
+        T value{};
+        std::memcpy(&value, ram.data() + (addr - Base), sizeof(value));
+        return value;
+    }
+};
+
+void check_cheat_vm_executes() {
+    const Core::Memory::TextCheatParser parser;
+    const auto entries = parser.Parse(
+        "[Direct write]\\n"
+        "04000000 00000018 0000002A\\n"
+        "[Pointer chain]\\n"
+        "580F0000 00000040\\n"
+        "780F0000 00000008\\n"
+        "640F0000 00000000 0001869F\\n");
+    require(entries.size() == 3 && entries[1].enabled && entries[2].enabled,
+            "direct and pointer cheats parsed and enabled");
+    auto callbacks = std::make_unique<VmTestCallbacks>();
+    auto* guest = callbacks.get();
+    guest->store<std::uint64_t>(VmTestCallbacks::Base + 0x40, VmTestCallbacks::Base + 0x60);
+    Core::Memory::DmntCheatVm vm(std::move(callbacks));
+    Core::Memory::CheatProcessMetadata metadata{};
+    metadata.main_nso_extents.base = VmTestCallbacks::Base;
+    metadata.main_nso_extents.size = guest->ram.size();
+
+    require(vm.LoadProgram(entries), "cheat VM accepted the opcode program");
+    vm.Execute(metadata);
+    require(guest->load<std::uint32_t>(VmTestCallbacks::Base + 0x18) == 42,
+            "the enabled direct cheat actually wrote guest memory");
+    require(guest->load<std::uint32_t>(VmTestCallbacks::Base + 0x68) == 99999,
+            "the enabled pointer cheat dereferenced and wrote guest memory");
+    require(guest->rejected_reads == 0 && guest->rejected_writes == 0,
+            "valid mapped targets were not rejected");
+
+    // Reloading disabled entries must stop writes without breaking other cheats.
+    auto disabled = entries;
+    disabled[2].enabled = false;
+    guest->store<std::uint32_t>(VmTestCallbacks::Base + 0x18, 0);
+    guest->store<std::uint32_t>(VmTestCallbacks::Base + 0x68, 0);
+    require(vm.LoadProgram(disabled), "live selection loads without the disabled cheat");
+    vm.Execute(metadata);
+    require(guest->load<std::uint32_t>(VmTestCallbacks::Base + 0x18) == 42 &&
+            guest->load<std::uint32_t>(VmTestCallbacks::Base + 0x68) == 0,
+            "disabled pointer cheat cannot run while enabled direct cheat does");
+
+    // A broken pointer is reported and rejected; never reinterpret 0 as a guest address.
+    guest->store<std::uint64_t>(VmTestCallbacks::Base + 0x40, 0);
+    require(vm.LoadProgram(entries), "re-enable pointer cheat");
+    vm.Execute(metadata);
+    require(guest->rejected_writes == 1 &&
+            guest->load<std::uint32_t>(VmTestCallbacks::Base + 0x68) == 0,
+            "invalid pointers are rejected without corrupting unrelated guest memory");
+}
+
 void check_settings(const fs::path& base) {
     const std::string settings = (base / "prosperoeden.json").string();
     const std::uint64_t game = 0x0100ABCD00001000ULL, other = 0x0100FFFF00002000ULL;
@@ -283,6 +380,7 @@ int main() {
     check_pchtxt();
     check_listing(base);
     check_cheats(base);
+    check_cheat_vm_executes();
     check_settings(base);
     fs::remove_all(base);
     std::puts("Mods: IPS and IPS32 patches, .pchtxt hex, text and long values, the folder listing, "
