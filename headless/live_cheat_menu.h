@@ -85,7 +85,7 @@ inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title
             } else if (it != disabled.end()) {
                 disabled.erase(it);
             }
-            saved = SaveDisabledMods(title_id, disabled);
+            saved = SaveModEnabled(title_id, target.mod, !enabled);
         }
         if (!saved) {
             Report("cheats", "Could not save in-game selection; leaving running cheat engine unchanged");
