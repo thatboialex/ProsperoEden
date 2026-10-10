@@ -41,6 +41,25 @@ static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
 static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
 static_assert(!ForPokemonZAPerformance(0x0100000000001000ULL, true).enabled);
 
+// A residual Z-A bug can make background meshes pop in and out even after
+// fixing vertex-input state. The PS5 Vulkan port already supports an exact
+// CPU predicate path for host conditional rendering (hcr_mode=2). Keep it
+// opt-in: readback/synchronization can be slower, and the cause is unproven.
+struct PokemonZAPredicationProfile {
+    bool cpu_predication = false;
+    int hcr_mode = 1;
+};
+constexpr PokemonZAPredicationProfile ForPokemonZAPredication(std::uint64_t title_id,
+                                                              bool use_vulkan,
+                                                              bool cpu_requested) {
+    const bool active = title_id == kPokemonLegendsZA && use_vulkan && cpu_requested;
+    return {active, active ? 2 : 1};
+}
+static_assert(ForPokemonZAPredication(kPokemonLegendsZA, true, true).hcr_mode == 2);
+static_assert(ForPokemonZAPredication(kPokemonLegendsZA, true, false).hcr_mode == 1);
+static_assert(ForPokemonZAPredication(kPokemonLegendsZA, false, true).hcr_mode == 1);
+static_assert(ForPokemonZAPredication(0x0100000000001000ULL, true, true).hcr_mode == 1);
+
 // FAST RMX (original Switch release): avoid growing the shared PS5 CPU/GPU memory
 // pool until allocations fail. Conservative cache budgets intentionally trade
 // some performance for less resident graphics memory. This is a mitigation, not
