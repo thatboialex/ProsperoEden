@@ -307,7 +307,8 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
             if (shortcut.activated) {
                 if (shortcut.action == 0) return_to_menu = true;
                 else if (shortcut.action == 1) hud_toggle = true;
-                else pause_cheats = true;
+                else if (shortcut.action == 2) pause_cheats = true;
+                else if (shortcut.action == 3) graphics_menu = true;
                 LOG_INFO(Input, "EDEN_PAD_SHORTCUT player={} action={} binding={}", player + 1,
                          shortcut.action, shortcuts[shortcut.action]);
             }
