@@ -22,6 +22,25 @@ static_assert(!ForGame(kPokemonLegendsZA, false).pokemon_za_workaround);
 static_assert(ForGame(kPokemonLegendsZA, true, false).vertex_input_dynamic_state);
 static_assert(ForGame(0x0100000000001000ULL, true).vertex_input_dynamic_state);
 
+// Leave the proven EDS2/vertex-input workaround untouched. Shader compilation
+// and 2x/3x internal resolution are separate causes of first-play frame spikes;
+// allow the user to compare this conservative Vulkan performance profile.
+struct PokemonZAPerformanceProfile {
+    bool enabled = false;
+    int resolution_ceiling = 2; // 1x; output resolution remains user-selected.
+    bool asynchronous_shaders = false;
+};
+constexpr PokemonZAPerformanceProfile ForPokemonZAPerformance(std::uint64_t title_id,
+                                                               bool use_vulkan,
+                                                               bool enabled = true) {
+    const bool active = enabled && use_vulkan && title_id == kPokemonLegendsZA;
+    return {active, 2, active};
+}
+static_assert(ForPokemonZAPerformance(kPokemonLegendsZA, true).enabled);
+static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
+static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
+static_assert(!ForPokemonZAPerformance(0x0100000000001000ULL, true).enabled);
+
 // FAST RMX (original Switch release): avoid growing the shared PS5 CPU/GPU memory
 // pool until allocations fail. Conservative cache budgets intentionally trade
 // some performance for less resident graphics memory. This is a mitigation, not
