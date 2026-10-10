@@ -1103,6 +1103,14 @@ set(new_cheat_callback [=[void CheatEngine::FrameCallback(std::chrono::nanosecon
     }
 }]=])
 eden_patch(cheat_runtime_source "${old_cheat_callback}" "${new_cheat_callback}")
+# The old cheat callbacks reject otherwise mapped guest pages unless they
+# happen to lie in four coarse main/heap/alias extents. Switch memory can also
+# place valid cheat targets in other mapped regions. Trust the process page
+# table's range check for the full opcode width instead. An address like 0x10
+# remains rejected, so bad pointer chains never become arbitrary host writes.
+eden_patch(cheat_runtime_source
+    "    if (process == nullptr || !IsAddressInRange(address) ||\n        !process->GetMemory().IsValidVirtualAddress(address)) {"
+    "    if (process == nullptr || size == 0 ||\n        !process->GetMemory().IsValidVirtualAddressRange(address, size)) {")
 string(PREPEND cheat_runtime_source "#include \"${EDEN_PORT_DIR}/cheat_runtime.h\"\n")
 write_derived("${PORT_BUILD_DIR}/cheat_engine_runtime.cpp" "${cheat_runtime_source}")
 get_target_property(core_sources core SOURCES)
