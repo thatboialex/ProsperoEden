@@ -22,6 +22,7 @@ on:
   # A build on main is started by hand (Run workflow): pushes to main build nothing.
   push:
     tags: ['v*']
+    branches: ['fix/pokemon-legends-za-vulkan']  # CI test build only; remove before merging
   pull_request:
   workflow_dispatch:
 
