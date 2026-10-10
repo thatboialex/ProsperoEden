@@ -366,8 +366,9 @@ void Launcher::draw_game_options(Canvas &c, float open)
     list.pop_clip();
     scrollbar(c, option_rows_, 1340.0f, kWindow.y, kWindow.h);
 
-    const bool opens = game_options_ == category_controls && option_rows_.selected == kMappingRow &&
-                       game_settings_.own_mapping;
+    const bool opens = game_options_ == category_controls &&
+                       (option_rows_.selected == kShortcutRow ||
+                        (option_rows_.selected == kMappingRow && game_settings_.own_mapping));
     if (!message_.empty())
     {
         notice_block(c, message_, 592.0f, kHints - 6.0f, theme::kSmall, 26.0f,
