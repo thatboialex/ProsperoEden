@@ -691,7 +691,7 @@ int main(int argc, char** argv) {
         Settings::values.dyna_state.SetValue(Settings::ExtendedDynamicState::EDS2);
         Settings::values.vertex_input_dynamic_state.SetValue(vk_profile.vertex_input_dynamic_state);
         if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
-            std::printf("EDEN_GAME_COMPAT title_id=%016llX backend=%s eds=2 vertex_input_dynamic=%u preset=%s\\n",
+            std::printf("EDEN_GAME_COMPAT title_id=%016llX backend=%s eds=2 vertex_input_dynamic=%u preset=%s\n",
                         static_cast<unsigned long long>(game_title), Eden::BackendName(backend),
                         static_cast<unsigned>(vk_profile.vertex_input_dynamic_state),
                         vk_profile.pokemon_za_workaround ? "pokemon_za" : "disabled_or_opengl");
