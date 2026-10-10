@@ -13,6 +13,12 @@ int main() {
     assert(!ForGame(kPokemonLegendsZA, true, false).pokemon_za_workaround);
     assert(ForGame(kPokemonLegendsZA, true, false).vertex_input_dynamic_state);
     assert(ForGame(0x0100000000001000ULL, true).vertex_input_dynamic_state);
+    // The stable graphics workaround is separate from the reversible 1x shader profile.
+    auto za = ForPokemonZAPerformance(kPokemonLegendsZA, true);
+    assert(za.enabled && za.resolution_ceiling == 2 && za.asynchronous_shaders);
+    assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
+    assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
+    assert(!ForPokemonZAPerformance(kFastRmx, true).enabled);
     // Fast RMX is the only title with conservative memory settings.
     auto rmx = ForFastRmx(kFastRmx);
     assert(rmx.enabled && rmx.resolution_ceiling == 2 && rmx.output_ceiling == 0);
