@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "pe/ui/launcher.hpp"
+#include "shortcut_chords.h"
 
 #include <algorithm>
 #include <string>
@@ -405,7 +406,8 @@ int Launcher::dialog_rows(Modal modal) const
                (library_.selected < static_cast<int>(games_.size()) &&
                         !games_[static_cast<std::size_t>(library_.selected)].sources.empty() &&
                         !games_[static_cast<std::size_t>(library_.selected)].remote ? 1 : 0);
-    case Modal::controls:     // vibration, the button mapping
+    case Modal::controls:     // vibration, mapping, library/FPS/cheat shortcuts
+        return 5;
     case Modal::diagnostics:  // detailed logging, logs written at once
         return 2;
     default:
@@ -426,8 +428,8 @@ float Launcher::dialog_row_top(Modal modal, int row) const
         return kVideoRowsTop + kVideoRowPitch * static_cast<float>(row) - video_rows_.scroll();
     case Modal::game:
         return 334.0f + 96.0f * static_cast<float>(row);
-    case Modal::controls: // under the shortcuts
-        return 560.0f + 96.0f * static_cast<float>(row);
+    case Modal::controls:
+        return 400.0f + 94.0f * static_cast<float>(row);
     case Modal::diagnostics: // under the setup's state
         return 500.0f + 102.0f * static_cast<float>(row);
     default:
@@ -539,10 +541,15 @@ void Launcher::press_dialog(Key key)
     case Modal::controls:
         if (option_ == 1)
         {
-            // The button mapping has its own list (game_options.cpp).
-            if (activate)
-                open_mapping(false);
+            if (activate) open_mapping(false);
             return;
+        }
+        if (option_ >= 2 && option_ <= 4) {
+            const int action = option_ - 2;
+            const int count = int(std::size(Eden::kShortcutLabels));
+            const int next = (prefs_.shortcuts[action] + (step < 0 ? count - 1 : 1)) % count;
+            prefs_.shortcuts = Eden::AssignShortcut(prefs_.shortcuts, action, next);
+            break;
         }
         prefs_.vibration = !prefs_.vibration;
         break;
@@ -727,34 +734,23 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     }
     case Modal::controls:
     {
-        // Each shortcut: its buttons as a key cap, then what it does.
-        struct Shortcut
-        {
-            const char *key;
-            const char *action;
-        };
-        static constexpr Shortcut kShortcuts[] = {
-            {" + L1", TR("End the game and return to this menu")},
-            {" + R1", TR("Show or hide the FPS overlay")}};
-        for (int i = 0; i < 2; ++i)
-        {
-            const float top = 366.0f + 78.0f * static_cast<float>(i);
-            list.bordered_rect({592.0f, top, 186.0f, 54.0f}, 12.0f, Color::rgb(0x15231d, 0.9f),
-                               1.0f, theme::kRowEdge.with_alpha(0.6f));
-            text_shrink(c, std::string(tr("Touchpad")) + kShortcuts[i].key, 685.0f,
-                        baseline(top, 54.0f, theme::kSmall), theme::kSmall, theme::kLimePale, 170.0f,
-                        Align::center);
-            text_shrink(c, tr(kShortcuts[i].action), 802.0f, baseline(top, 54.0f, 22.0f), 22.0f,
-                        theme::kBody, 526.0f);
-        }
         label(0, tr("Vibration"), kToggle);
         toggle(c, 1292.0f, row_centre(0), knob);
-        // The button mapping: as usual or changed, opened with Cross.
-        const float shown = text_shrink(
-            c, prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed"), 1292.0f,
+        const float mapped = text_shrink(c,
+            prefs_.mapping == kDefaultMapping ? tr("As usual") : tr("Changed"), 1292.0f,
             baseline(dialog_row_top(modal, 1), 94.0f, theme::kSmall), theme::kSmall,
-            prefs_.mapping == kDefaultMapping ? theme::kMeta : theme::kLimePale, 320.0f, Align::right);
-        label(1, tr("Button mapping"), shown);
+            theme::kLimePale, 345.0f, Align::right);
+        label(1, tr("Button mapping"), mapped);
+        static constexpr const char* action_names[] = {
+            TR("Return to library"), TR("FPS overlay"), TR("Pause / cheats")};
+        for (int i = 0; i < 3; ++i) {
+            const int row = i + 2;
+            const char* chord = Eden::kShortcutLabels[prefs_.shortcuts[i]];
+            const float width = text_shrink(c, chord, 1292.0f,
+                baseline(dialog_row_top(modal, row), 94.0f, theme::kSmall),
+                theme::kSmall, theme::kLimePale, 410.0f, Align::right);
+            label(row, tr(action_names[i]), width);
+        }
         break;
     }
     case Modal::performance:
