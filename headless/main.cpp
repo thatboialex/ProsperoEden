@@ -37,6 +37,7 @@
 #include "display_refresh.h"
 #include "log_flusher.h"
 #include "mods.h"
+#include "game_compatibility.h"
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "keyboard_applet.h"
@@ -670,6 +671,35 @@ int main(int argc, char** argv) {
         Settings::values.current_gpu_accuracy = Settings::GpuAccuracy::High;
         Settings::values.dma_accuracy.SetValue(Settings::DmaAccuracy::Default);
         Settings::values.memory_layout_mode = Settings::MemoryLayout::Memory_4Gb;
+#if defined(PS5_NATIVE) && defined(EDEN_PS5_VULKAN)
+        // Settings::values survives the launcher between games. Reset Vulkan extension
+        // settings on EVERY launch: a workaround for one title must not carry over.
+        // The known desktop RADV workaround for Pokemon Legends Z-A is EDS2 with
+        // vertex input dynamic state disabled (eden-emulator/Issue-Reports#481).
+        bool pokemon_za_compat = true;
+        {
+            // Escape hatch for PS5 Mesa variants where the desktop workaround fails:
+            // place 'pokemon_za=off' in the installed app's compatibility.txt.
+            std::ifstream config(Eden::AppFile("compatibility.txt"));
+            for (std::string option; config >> option;) {
+                if (option == "pokemon_za=off") pokemon_za_compat = false;
+                else if (option == "pokemon_za=on") pokemon_za_compat = true;
+            }
+        }
+        const auto vk_profile = Eden::Compatibility::ForGame(
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_compat);
+        Settings::values.dyna_state.SetValue(Settings::ExtendedDynamicState::EDS2);
+        Settings::values.vertex_input_dynamic_state.SetValue(vk_profile.vertex_input_dynamic_state);
+        if (game_title == Eden::Compatibility::kPokemonLegendsZA) {
+            std::printf("EDEN_GAME_COMPAT title_id=%016llX backend=%s eds=2 vertex_input_dynamic=%u preset=%s\\n",
+                        static_cast<unsigned long long>(game_title), Eden::BackendName(backend),
+                        static_cast<unsigned>(vk_profile.vertex_input_dynamic_state),
+                        vk_profile.pokemon_za_workaround ? "pokemon_za" : "disabled_or_opengl");
+            Eden::Report("compatibility", vk_profile.pokemon_za_workaround ?
+                "Pokemon Legends Z-A: Vulkan EDS2, vertex input dynamic state off" :
+                "Pokemon Legends Z-A: Vulkan workaround not applied");
+        }
+#endif
         // A development run that names jit_list in dev-settings decides the block list by itself.
         [[maybe_unused]] bool dev_block_list = false;  // read where a session applies its settings
 #ifdef EDEN_DEV_PROFILE
