@@ -32,7 +32,18 @@ int main() {
     assert(Eden::CheatRuntime::failed_writes.load() == 1);
     assert(Eden::CheatRuntime::rejected_writes.load() == 1);
     assert(Eden::CheatRuntime::last_rejected_address.load() == 0x80000040ULL);
+    // A chain through a null object reads at the field offsets (0x68, 0x50, ...); a non-null
+    // pointer the page table lacks reads at a real address. The report tells them apart.
+    Eden::CheatRuntime::Reset();
+    Eden::CheatRuntime::Read(false, 0x68);
+    Eden::CheatRuntime::Read(false, 0x50);
+    Eden::CheatRuntime::Read(false, 0x2000000050ULL);
+    assert(Eden::CheatRuntime::null_pointer_reads.load() == 2);
+    assert(Eden::CheatRuntime::unmapped_reads.load() == 1);
+    assert(Eden::CheatRuntime::last_unmapped_read.load() == 0x2000000050ULL);
+    Eden::CheatRuntime::Report(2, 1, 15);
     Eden::CheatRuntime::Reset();
     assert(Eden::CheatRuntime::writes.load() == 0);
+    assert(Eden::CheatRuntime::null_pointer_reads.load() == 0);
     std::puts("cheat file selection and VM write counters: PASS");
 }
