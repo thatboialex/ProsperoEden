@@ -21,4 +21,26 @@ static_assert(ForGame(kPokemonLegendsZA, true).pokemon_za_workaround);
 static_assert(!ForGame(kPokemonLegendsZA, false).pokemon_za_workaround);
 static_assert(ForGame(kPokemonLegendsZA, true, false).vertex_input_dynamic_state);
 static_assert(ForGame(0x0100000000001000ULL, true).vertex_input_dynamic_state);
+
+// FAST RMX (original Switch release): avoid growing the shared PS5 CPU/GPU memory
+// pool until allocations fail. Conservative cache budgets intentionally trade
+// some performance for less resident graphics memory. This is a mitigation, not
+// a demonstrated cure for a memory leak.
+inline constexpr std::uint64_t kFastRmx = 0x01009510001CA000ULL;
+struct FastRmxMemoryProfile {
+    bool enabled = false;
+    int resolution_ceiling = 2; // 1x in kResolutionKeys
+    int output_ceiling = 0;     // 1080p in kOutputKeys
+    bool early_dirty_eviction = false;
+    bool disable_frame_generation = false;
+    bool use_conservative_vram = false;
+};
+constexpr FastRmxMemoryProfile ForFastRmx(std::uint64_t title_id, bool enabled = true) {
+    const bool active = enabled && title_id == kFastRmx;
+    return {active, 2, 0, active, active, active};
+}
+static_assert(ForFastRmx(kFastRmx).enabled);
+static_assert(ForFastRmx(kFastRmx).early_dirty_eviction);
+static_assert(!ForFastRmx(kFastRmx, false).enabled);
+static_assert(!ForFastRmx(kPokemonLegendsZA).enabled);
 } // namespace Eden::Compatibility
