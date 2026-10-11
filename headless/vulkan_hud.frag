@@ -50,16 +50,21 @@ void main() {
                     mix(lime, vec3(0.141, 0.365, 0.290), clamp((p.x - 458.0) / 995.0, 0.0, 1.0)) :
                     muted;
                 rgb = mix(rgb, row_color, inside * (focus ? 0.90 : 0.8));
-                float sw = length(max(abs(p - vec2(1396.0, row_y + 23.0)) -
-                    vec2(48.0 - 17.0, 17.0 - 17.0), 0.0)) -
-                    17.0; // oval toggle
-                float pill = 1.0 - smoothstep(-1.0, 1.0, sw);
-                bool enabled = (text.glyphs[3] & (1u << uint(i))) != 0u;
-                vec3 pill_color = enabled ? lime : vec3(0.25, 0.36, 0.31);
-                rgb = mix(rgb, pill_color, pill);
-                float knob_x = enabled ? 1423.0 : 1369.0;
-                float knob = length(p - vec2(knob_x, row_y + 23.0));
-                rgb = mix(rgb, vec3(0.96, 0.98, 0.94), (1.0 - smoothstep(11.0, 12.0, knob)) * pill);
+                // Hide switches for non-actionable informational rows (for
+                // example an empty cheat list). The GPU still draws the row.
+                if ((text.glyphs[6] & (1u << uint(i))) != 0u) {
+                    float sw = length(max(abs(p - vec2(1396.0, row_y + 23.0)) -
+                        vec2(48.0 - 17.0, 17.0 - 17.0), 0.0)) -
+                        17.0; // oval toggle
+                    float pill = 1.0 - smoothstep(-1.0, 1.0, sw);
+                    bool enabled = (text.glyphs[3] & (1u << uint(i))) != 0u;
+                    vec3 pill_color = enabled ? lime : vec3(0.25, 0.36, 0.31);
+                    rgb = mix(rgb, pill_color, pill);
+                    float knob_x = enabled ? 1423.0 : 1369.0;
+                    float knob = length(p - vec2(knob_x, row_y + 23.0));
+                    rgb = mix(rgb, vec3(0.96, 0.98, 0.94),
+                        (1.0 - smoothstep(11.0, 12.0, knob)) * pill);
+                }
             }
             // Eden lime divider beneath the panel heading.
             float divider = (1.0 - smoothstep(1.0, 2.5, abs(p.y - 314.0))) *
