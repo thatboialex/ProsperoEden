@@ -15,7 +15,8 @@ int main() {
     assert(ForGame(0x0100000000001000ULL, true).vertex_input_dynamic_state);
     // The stable graphics workaround is separate from the reversible 1x shader profile.
     auto za = ForPokemonZAPerformance(kPokemonLegendsZA, true);
-    assert(za.enabled && za.resolution_ceiling == 2 && za.asynchronous_shaders);
+    assert(za.enabled && za.resolution_ceiling == 2 && !za.cap_resolution && za.asynchronous_shaders);
+    assert(ForPokemonZAPerformance(kPokemonLegendsZA, true, true, true).cap_resolution);
     assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
     assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
     assert(!ForPokemonZAPerformance(kFastRmx, true).enabled);
