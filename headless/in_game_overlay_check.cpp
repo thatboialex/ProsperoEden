@@ -44,6 +44,7 @@ int main() {
     frame = Frame();
     assert(frame.background.glyphs[2] == 1); // informational row is visible
     assert(frame.background.glyphs[6] == 0); // but no misleading switch is drawn
+    assert(frame.text[frame.count - 2].glyphs == Eden::HudText("ENABLE MODS THEN RESTART"));
     Close();
     Open(Mode::graphics, {{"Bilinear", true}, {"FSR", false}}, 1);
     assert(Frame().background.glyphs[0] == 1);
