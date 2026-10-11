@@ -586,7 +586,7 @@ adapt('src/video_core/renderer_vulkan/present/window_adapt_pass.h',
 ])
 adapt('src/video_core/renderer_vulkan/present/window_adapt_pass.cpp', 'vulkan_window_adapt_pass.cpp', [
     ('#include "core/frontend/framebuffer_layout.h"',
-     '#include "core/frontend/framebuffer_layout.h"\n#include "hud.h"\n#include "vulkan_hud_shaders.h"'),
+     '#include "core/frontend/framebuffer_layout.h"\n#include "hud.h"\n#include "in_game_overlay.h"\n#include "vulkan_hud_shaders.h"'),
     ('const Layout::FramebufferLayout& layout, Frame* dst) {',
      'const Layout::FramebufferLayout& layout, Frame* dst, bool draw_hud) {'),
     ('    scheduler.Record([=](vk::CommandBuffer cmdbuf) {',
