@@ -1670,7 +1670,7 @@ int main(int argc, char** argv) {
 #ifdef PS5_NATIVE
                         if (game && pad->TakePauseCheats()) {
                             Eden::Report("controls", "Pause / Cheats shortcut received");
-                            Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);
+                            Eden::ShowPausedCheats(system, *pad, backend, game_title, stop_cheat_dialog);
                         }
                         if (game && pad->TakeGraphicsMenu()) {
                             Eden::Report("controls", "Live graphics shortcut received");
