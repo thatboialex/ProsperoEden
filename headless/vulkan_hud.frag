@@ -78,13 +78,7 @@ void main() {
             int letter = at.x / 4;
             int x = at.x % 4;
             if (letter < 24 && x < 3 && at.y < 5) {
-                uint glyphs[24] = uint[24](
-                    text.glyphs[0], text.glyphs[1], text.glyphs[2], text.glyphs[3],
-                    text.glyphs[4], text.glyphs[5], text.glyphs[6], text.glyphs[7],
-                    text.glyphs[8], text.glyphs[9], text.glyphs[10], text.glyphs[11],
-                    text.glyphs[12], text.glyphs[13], text.glyphs[14], text.glyphs[15],
-                    text.glyphs[16], text.glyphs[17], text.glyphs[18], text.glyphs[19],
-                    text.glyphs[20], text.glyphs[21], text.glyphs[22], text.glyphs[23]);
+                // Reuse the dynamically uniform glyph array loaded above.
                 ink = ((glyphs[letter] >> uint((4 - at.y) * 3 + 2 - x)) & 1u) != 0u;
             }
         }
