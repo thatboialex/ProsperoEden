@@ -18,7 +18,7 @@
 namespace Eden::InGameOverlay {
 enum class Mode : std::uint8_t { none, cheats, graphics };
 inline constexpr int kVisibleRows = 7;
-inline constexpr int kMaxTextLines = 21;
+inline constexpr std::size_t kMaxTextLines = 21;
 
 struct Row {
     std::string label;
