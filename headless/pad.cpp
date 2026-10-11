@@ -316,7 +316,25 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
             chord_masks[i] = button_mask(kShortcutChords[i].first) |
                              button_mask(kShortcutChords[i].second);
         const auto pressed = sample.buttons;
-        const auto shortcut = DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
+        const bool menu_open = cheat_menu_open.load(std::memory_order_acquire);
+        // Real gamepad controls for the game's Eden pause UI: no keyboard,
+        // numeric commands or game-button leakage. Edge-triggered for parity
+        // with the launcher's normal Up/Down/Cross/Circle navigation.
+        if (menu_open && player == 0) {
+            const auto rising = [&](ButtonMask mask) {
+                return (pressed & mask) != 0 && (last_buttons & mask) == 0;
+            };
+            MenuKey key = MenuKey::none;
+            if (rising(kButtonCircle)) key = MenuKey::back;
+            else if (rising(kButtonCross)) key = MenuKey::accept;
+            else if (rising(kButtonUp)) key = MenuKey::up;
+            else if (rising(kButtonDown)) key = MenuKey::down;
+            else if (rising(kButtonL1)) key = MenuKey::page_up;
+            else if (rising(kButtonR1)) key = MenuKey::page_down;
+            if (key != MenuKey::none) menu_command.store(key, std::memory_order_release);
+        }
+        const auto shortcut = menu_open ? ShortcutEvent<ButtonMask>{} :
+            DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
         if (shortcut.action >= 0) {
             if (shortcut.activated) {
                 if (shortcut.action == 0) return_to_menu = true;
@@ -329,8 +347,11 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
             sample.buttons &= ~shortcut.consumed;
         }
         // The native in-game cheat dialog owns input while it is open.
-        if (cheat_menu_open.load(std::memory_order_relaxed))
+        if (menu_open) {
             sample.buttons = 0;
+            slot.select_pulse = 0;
+            slot.select_held = false;
+        }
         // The touchpad on its own: see kSelectTapPolls.
         const bool touch = (pressed & kButtonTouchPad) != 0;
         const bool touched = (last_buttons & kButtonTouchPad) != 0;
