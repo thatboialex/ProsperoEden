@@ -19,9 +19,13 @@
 #include "common/scope_exit.h"
 
 namespace Eden {
-inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title_id,
+inline void ShowPausedCheats(Core::System& system, Pad& pad, GraphicsBackend backend, std::uint64_t title_id,
                              const std::atomic<bool>& stopped) {
     if (!system.IsPoweredOn() || stopped.load()) return;
+    if (backend != GraphicsBackend::Vulkan) {
+        Report("cheats", "EDEN_CHEAT_MENU: native styled overlay requires Vulkan");
+        return;
+    }
     const auto all_mods = Mods::List(AssetsPath("mods"), title_id);
     const auto& loaded = Cheats::Main();
     std::vector<std::size_t> available;
@@ -35,9 +39,9 @@ inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title
         rows.push_back({entry.entry.definition.readable_name.data(), enabled});
     }
     if (rows.empty()) rows.push_back({"NO CHEATS LOADED FOR THIS GAME", false});
-    InGameOverlay::Open(InGameOverlay::Mode::cheats, std::move(rows));
     pad.SetCheatMenuOpen(true);
     system.Pause();
+    InGameOverlay::Open(InGameOverlay::Mode::cheats, std::move(rows));
     Report("cheats", "EDEN_CHEAT_MENU_OPEN controller UI active; guest paused");
     SCOPE_EXIT {
         InGameOverlay::Close();
