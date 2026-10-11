@@ -26,27 +26,39 @@ pokemon_za=off
 Delete the line or set `pokemon_za=on` to retry the workaround. Restart
 ProsperoEden after changing the file.
 
-## Gameplay performance profile
+## Internal resolution and performance
 
-The PS5 framebuffer and GPU shader compiler can cause pauses even when the
-rendering corruption has been resolved. The per-title Vulkan performance profile
-now limits **internal** rendering to 1x and ensures asynchronous shaders are on.
-Your selected TV **output** resolution stays unchanged, with the selected upscale
-filter handling the difference; it does not alter the EDS2/vertex-input graphics
-fix. The frame-rate target is unchanged. The first playthrough can still pause
-when a shader has not yet been compiled; a warmed cache may be smoother.
+The original Z-A compatibility profile forced **1× internal rendering**
+regardless of the Video > Internal resolution selection. Consequently choosing
+2×, 3× or 4× did **not** actually request those internal scales; output
+upscaling may simply enlarge the same 1× image and expose jagged edges or
+sharpening artifacts.
 
-This profile is on by default for this title on Vulkan only. To compare with your
-prior configuration while **keeping the graphics fix**, place this in the app's
-`compatibility.txt` and restart:
+The updated Z-A Vulkan profile keeps the EDS2 / static vertex-input
+graphics correction **and asynchronous shader compilation** but now honors
+the selected *internal* resolution. Higher scales can consume much more
+PS5 shared graphics memory and may worsen frame pacing, culling, or aliasing;
+this does not claim they are visually correct on your PS5. Test **1.5×,
+then 2×**, using the same game scene, and restart after each change.
+Prefer 1× if flickering or out-of-memory errors increase.
+
+A conservative emergency option remains available in `compatibility.txt`:
 
 ```text
-pokemon_za_perf=off
+pokemon_za_scale=1x
 ```
 
-Set `pokemon_za_perf=on` to re-enable. For continued hitching, compare the
-`EDEN_VULKAN_FRAME` worst-frame intervals and shader-cache warmup between two
-play sessions before changing global settings.
+Switch back with `pokemon_za_scale=selected` (the default). This option
+changes only the internal-resolution cap; neither choice disables the
+vertex-input graphics fix.
+
+`pokemon_za_perf=off` is still available for a broader A/B comparison of
+the shader/performance profile. The EDS2 correction has its independent
+`pokemon_za=off` rollback.
+
+The in-game **Live graphics** menu changes the *presentation filter* only.
+It cannot safely change internal resolution or rebuild the active Vulkan
+render targets. Make the latter changes in Game Settings > Video, then restart.
 
 ## Intermittent background building or prop popping
 
