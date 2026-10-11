@@ -22,5 +22,31 @@ int main() {
     const auto swapped=AssignShortcut(bindings,2,0);
     assert(DispatchShortcut(swapped,masks,touch|L1,Mask{0}).action==2);
     assert(DispatchShortcut(swapped,masks,touch|options,Mask{0}).action==0);
-    std::cout << "PASS pause, graphics, return, HUD shortcuts, edge, priority, remap\n";
+    constexpr Mask L2=32u,R2=64u,L3=128u,R3=256u;
+    constexpr auto padmask = [=](ShortcutButton b) -> Mask {
+        switch (b) {
+        case ShortcutButton::touchpad: return touch;
+        case ShortcutButton::create: return create;
+        case ShortcutButton::options: return options;
+        case ShortcutButton::l1: return L1;
+        case ShortcutButton::r1: return R1;
+        case ShortcutButton::l2: return L2;
+        case ShortcutButton::r2: return R2;
+        case ShortcutButton::l3: return L3;
+        case ShortcutButton::r3: return R3;
+        }
+        return 0;
+    };
+    std::array<Mask, kShortcutChords.size()> extended{};
+    for (std::size_t i = 0; i < extended.size(); ++i)
+        extended[i] = padmask(kShortcutChords[i].first) | padmask(kShortcutChords[i].second);
+    auto custom = AssignShortcut(bindings, 2, 16);
+    assert(DispatchShortcut(custom, extended, L3|R3, Mask{0}).action == 2);
+    assert(DispatchShortcut(custom, extended, L3|R3, Mask{0}).activated);
+    assert(!DispatchShortcut(custom, extended, L3|R3, L3|R3).activated);
+    custom = AssignShortcut(custom, 3, 15);
+    assert(DispatchShortcut(custom, extended, L2|R2, Mask{0}).action == 3);
+    custom = AssignShortcut(custom, 0, 17);
+    assert(DispatchShortcut(custom, extended, L1|L3, Mask{0}).action == 0);
+    std::cout << "PASS L3 R3 L1 R1 L2 R2 and four hotkey actions\n";
 }
