@@ -380,8 +380,8 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
         for (const auto [mask, button] : fixed)
             engine->SetButtonState(player, button, (sample.buttons & mask) != 0);
         // The game's buttons are digital: the analog triggers count from the threshold.
-        const bool left = sample.triggers.l2 / 255.0f >= trigger_threshold;
-        const bool right = sample.triggers.r2 / 255.0f >= trigger_threshold;
+        const bool left = !menu_open && sample.triggers.l2 / 255.0f >= trigger_threshold;
+        const bool right = !menu_open && sample.triggers.r2 / 255.0f >= trigger_threshold;
         for (int game = 0; game < kGameButtons; ++game) {
             const int pad = mapping[game];
             if (pad == pad_touchpad) continue;  // set_touch
