@@ -1,4 +1,6 @@
-    const auto hud = draw_hud ? Eden::GetVulkanHud() : Eden::HudSnapshot{};
+    const auto overlay = Eden::InGameOverlay::Frame();
+    const auto hud = overlay.background.width ? overlay.background :
+        draw_hud ? Eden::GetVulkanHud() : Eden::HudSnapshot{};
     if (hud.width && !hud_pipeline) {
         const VkPushConstantRange range{VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(hud)};
         hud_layout = device.GetLogical().CreatePipelineLayout(VkPipelineLayoutCreateInfo{
