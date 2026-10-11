@@ -135,7 +135,12 @@ inline Draw Frame() {
         append(std::string_view(name).substr(0, 24), 500, row_y + (two_lines ? 6u : 15u), focus);
         if (two_lines) append(std::string_view(name).substr(24, 24), 500, row_y + 28u, focus);
     }
-    append(state.mode == Mode::cheats ? "CROSS TOGGLE  UP DOWN" : "CROSS APPLY  UP DOWN", 480, 827, false);
+    const bool can_act = state.mode != Mode::cheats ||
+        std::any_of(state.rows.begin(), state.rows.end(),
+                    [](const Row& row) { return row.switchable; });
+    append(!can_act ? "ENABLE MODS THEN RESTART" :
+           state.mode == Mode::cheats ? "CROSS TOGGLE  UP DOWN" : "CROSS APPLY  UP DOWN",
+           480, 827, false);
     append("CIRCLE CLOSE  L1 R1 PAGE", 480, 873, false);
     return frame;
 }
