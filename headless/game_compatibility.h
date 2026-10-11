@@ -27,17 +27,21 @@ static_assert(ForGame(0x0100000000001000ULL, true).vertex_input_dynamic_state);
 // allow the user to compare this conservative Vulkan performance profile.
 struct PokemonZAPerformanceProfile {
     bool enabled = false;
-    int resolution_ceiling = 2; // 1x; output resolution remains user-selected.
+    int resolution_ceiling = 2; // safety option; not forced by default.
+    bool cap_resolution = false;
     bool asynchronous_shaders = false;
 };
 constexpr PokemonZAPerformanceProfile ForPokemonZAPerformance(std::uint64_t title_id,
                                                                bool use_vulkan,
-                                                               bool enabled = true) {
+                                                               bool enabled = true,
+                                                               bool cap_resolution = false) {
     const bool active = enabled && use_vulkan && title_id == kPokemonLegendsZA;
-    return {active, 2, active};
+    return {active, 2, active && cap_resolution, active};
 }
 static_assert(ForPokemonZAPerformance(kPokemonLegendsZA, true).enabled);
 static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, false).enabled);
+static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true).cap_resolution);
+static_assert(ForPokemonZAPerformance(kPokemonLegendsZA, true, true, true).cap_resolution);
 static_assert(!ForPokemonZAPerformance(kPokemonLegendsZA, true, false).enabled);
 static_assert(!ForPokemonZAPerformance(0x0100000000001000ULL, true).enabled);
 
