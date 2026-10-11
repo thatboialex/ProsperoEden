@@ -23,6 +23,7 @@ inline constexpr std::size_t kMaxTextLines = 21;
 struct Row {
     std::string label;
     bool enabled = false;
+    bool switchable = true;
 };
 struct Model {
     Mode mode = Mode::none;
@@ -107,23 +108,35 @@ inline Draw Frame() {
     frame.background.glyphs[2] = static_cast<std::uint32_t>(visible_rows);
     frame.background.glyphs[4] = static_cast<std::uint32_t>(page);
     frame.background.glyphs[5] = static_cast<std::uint32_t>(total);
-    for (int i = 0; i < visible_rows; ++i)
+    for (int i = 0; i < visible_rows; ++i) {
         if (state.rows[page + i].enabled) frame.background.glyphs[3] |= 1u << i;
+        if (state.rows[page + i].switchable) frame.background.glyphs[6] |= 1u << i;
+    }
 
     const auto append = [&](std::string_view name, unsigned x, unsigned y, bool selected) {
         if (frame.count < frame.text.size()) frame.text[frame.count++] = Line(name, x, y, selected);
     };
     append(state.mode == Mode::cheats ? "CHEAT MANAGER" : "LIVE GRAPHICS", 480, 220, false);
-    append(state.mode == Mode::cheats ? "SELECT A CHEAT TO TOGGLE" : "CHANGE UPSCALING FILTER", 480, 273, false);
+    append(state.mode == Mode::cheats ? "SELECT CHEATS TO TOGGLE" : "CHANGE UPSCALING FILTER", 480, 273, false);
+    // On long cheat lists, keep the current page visible without requiring a
+    // separate numeric dialog. The title also tells players the page count.
+    const int page_number = page / kVisibleRows + 1;
+    const int page_count = (total + kVisibleRows - 1) / kVisibleRows;
+    const std::string counter = "PAGE " + std::to_string(page_number) +
+                                " OF " + std::to_string(page_count);
+    append(counter, 1120, 273, false);
     for (int i = 0; i < visible_rows; ++i) {
         const auto name = VisibleText(state.rows[page + i].label);
-        const unsigned y = 362u + 62u * unsigned(i);
+        const unsigned row_y = 331u + 62u * unsigned(i);
         const bool focus = page + i == state.selected;
-        append(std::string_view(name).substr(0, 24), 500, y, focus);
-        if (name.size() > 24) append(std::string_view(name).substr(24, 24), 884, y, focus);
+        const bool two_lines = name.size() > 24;
+        // A row is 50px high. Long names wrap *vertically*, rather than
+        // stretching across the toggle area at the same height.
+        append(std::string_view(name).substr(0, 24), 500, row_y + (two_lines ? 6u : 15u), focus);
+        if (two_lines) append(std::string_view(name).substr(24, 24), 500, row_y + 28u, focus);
     }
-    append("CROSS SELECT  UP DOWN MOVE", 480, 827, false);
-    append("CIRCLE RESUME", 480, 873, false);
+    append(state.mode == Mode::cheats ? "CROSS TOGGLE  UP DOWN" : "CROSS APPLY  UP DOWN", 480, 827, false);
+    append("CIRCLE CLOSE  L1 R1 PAGE", 480, 873, false);
     return frame;
 }
 } // namespace Eden::InGameOverlay
