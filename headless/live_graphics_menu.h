@@ -37,11 +37,11 @@ inline void ShowPausedGraphics(Core::System& system, Pad& pad, GraphicsBackend b
         return;
     }
     const int current = LiveFilterIndex(::Settings::values.scaling_filter.GetValue());
+    pad.SetCheatMenuOpen(true);
+    system.Pause();
     InGameOverlay::Open(InGameOverlay::Mode::graphics, {
         {"Bilinear", current == 0}, {"AMD FidelityFX FSR", current == 1},
         {"Bicubic", current == 2}, {"Nearest neighbor", current == 3}}, current);
-    pad.SetCheatMenuOpen(true);
-    system.Pause();
     Report("graphics", "EDEN_GRAPHICS_MENU_OPEN guest paused; controller choices active");
     SCOPE_EXIT {
         InGameOverlay::Close();
