@@ -17,6 +17,7 @@
 #include <cstring>
 #include <time.h>
 #include "hud.h"
+#include "in_game_overlay.h"
 #include "loading_scene_glsl.h"
 #include "preferences.h"
 #include "diagnostics.h"
@@ -501,6 +502,14 @@ HudSnapshot GetVulkanHud() {
 // idle: the GPU thread has no game commands waiting (hud.h, LoadingPace).
 bool LoadingTick(VideoCore::RendererBase& renderer, bool idle) {
 #ifdef EDEN_PS5_VULKAN
+    if (InGameOverlay::IsOpen()) {
+        // The guest is paused, not the host GPU worker. Its existing idle
+        // presentation loop draws the menu over the Vulkan swapchain at 60Hz.
+        const double now = std::chrono::duration<double>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        if (vulkan_loading_pace.Due(now, idle)) PresentVulkanLoading(renderer);
+        return true;
+    }
     if (vulkan_loading) {
         const double now = std::chrono::duration<double>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
