@@ -41,7 +41,7 @@ start = pad.index('if (touch && !touched)')
 flag = pad.index('if (shortcut.action >= 0 ||', start)
 assert flag > start, "Touchpad chord flag is erased by touch-start reset"
 check(main, 'pad->SetShortcuts(shortcuts);', "loaded shortcuts applied at boot")
-check(main, 'Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);',
+check(main, 'Eden::ShowPausedCheats(system, *pad, backend, game_title, stop_cheat_dialog);',
       "pause event invokes cheat dialog")
 check(main, 'Eden::ShowPausedGraphics(system, *pad, backend, stop_cheat_dialog);',
       "graphics event invokes live settings selector")
