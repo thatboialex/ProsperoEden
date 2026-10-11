@@ -15,6 +15,7 @@ int main() {
     assert(frame.background.glyphs[0] == 0); // cheat mode
     assert(frame.background.glyphs[2] == 3);
     assert(frame.background.glyphs[3] == 5); // first and third enabled
+    assert(frame.background.glyphs[6] == 7); // every cheat has a switch
     assert(frame.count >= 5 && frame.count <= kMaxTextLines);
     assert(frame.text[0].loading == 3); // title
     assert(frame.text[2].loading == 4); // first focused code
@@ -37,11 +38,18 @@ int main() {
     assert(frame.background.glyphs[1] == 3);
     assert(frame.background.glyphs[3] == (1u << 3));
     assert(frame.count <= kMaxTextLines);
+    assert(frame.background.glyphs[6] == 127); // seven real switches on page 2
+    Close();
+    Open(Mode::cheats, {{"NO CHEATS LOADED FOR THIS GAME", false, false}});
+    frame = Frame();
+    assert(frame.background.glyphs[2] == 1); // informational row is visible
+    assert(frame.background.glyphs[6] == 0); // but no misleading switch is drawn
     Close();
     Open(Mode::graphics, {{"Bilinear", true}, {"FSR", false}}, 1);
     assert(Frame().background.glyphs[0] == 1);
     SelectOnly(1);
     assert(Frame().background.glyphs[3] == 2);
+    assert(Frame().background.glyphs[6] == 3);
     Close();
     assert(Eden::ValidShortcuts({8, 9, 15, 16}));
     std::puts("native Eden in-game list, toggles, page scrolling and rendering state: PASS");
