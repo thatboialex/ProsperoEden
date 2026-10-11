@@ -297,10 +297,24 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
     for (const auto& raw : samples) {
         auto sample = is_usable(raw) ? raw : neutral_data(raw.timestamp_us);
         // The shortcuts work from every controller.
-        const std::array<ButtonMask, 6> chord_masks{
-            kButtonTouchPad | kButtonL1, kButtonTouchPad | kButtonR1,
-            kButtonTouchPad | kButtonOptions, kButtonCreate | kButtonL1,
-            kButtonCreate | kButtonR1, kButtonCreate | kButtonOptions};
+        const auto button_mask = [](Eden::ShortcutButton button) -> ButtonMask {
+            switch (button) {
+            case Eden::ShortcutButton::touchpad: return kButtonTouchPad;
+            case Eden::ShortcutButton::create: return kButtonCreate;
+            case Eden::ShortcutButton::options: return kButtonOptions;
+            case Eden::ShortcutButton::l1: return kButtonL1;
+            case Eden::ShortcutButton::r1: return kButtonR1;
+            case Eden::ShortcutButton::l2: return kButtonL2;
+            case Eden::ShortcutButton::r2: return kButtonR2;
+            case Eden::ShortcutButton::l3: return kButtonL3;
+            case Eden::ShortcutButton::r3: return kButtonR3;
+            }
+            return ButtonMask{};
+        };
+        std::array<ButtonMask, kShortcutChords.size()> chord_masks{};
+        for (std::size_t i = 0; i < chord_masks.size(); ++i)
+            chord_masks[i] = button_mask(kShortcutChords[i].first) |
+                             button_mask(kShortcutChords[i].second);
         const auto pressed = sample.buttons;
         const auto shortcut = DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
         if (shortcut.action >= 0) {
@@ -327,7 +341,8 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
         // Reset the touch state first, then mark an active chord. Previously the
         // reset above erased the chord flag when both buttons arrived together,
         // creating an unintended game Minus/Touchpad pulse on release.
-        if (shortcut.action >= 0 || (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonOptions)) != 0)) {
+        if (shortcut.action >= 0 || (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonL2 |
+                kButtonR2 | kButtonL3 | kButtonR3 | kButtonOptions)) != 0)) {
             slot.touch_chord = true;
             slot.select_held = false;
         }
