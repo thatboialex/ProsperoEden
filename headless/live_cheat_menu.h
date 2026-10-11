@@ -34,6 +34,7 @@ inline void ShowPausedCheats(Core::System& system, Pad& pad, std::uint64_t title
                              == Cheats::Off().end();
         rows.push_back({entry.entry.definition.readable_name.data(), enabled});
     }
+    if (rows.empty()) rows.push_back({"NO CHEATS LOADED FOR THIS GAME", false});
     InGameOverlay::Open(InGameOverlay::Mode::cheats, std::move(rows));
     pad.SetCheatMenuOpen(true);
     system.Pause();
