@@ -48,6 +48,14 @@ struct StartupGate {
         return smooth_frames >= 8 || now - first >= 5.0;
     }
 };
+constexpr std::uint32_t Glyph3x5(const char* a, const char* b, const char* c,
+                                    const char* d, const char* e) {
+    const char* rows[]{a,b,c,d,e};
+    std::uint32_t bits = 0;
+    for (int y = 0; y < 5; ++y) for (int x = 0; x < 3; ++x)
+        if (rows[y][x] != ' ') bits |= 1u << ((4 - y) * 3 + 2 - x);
+    return bits;
+}
 inline uint32_t HudGlyph(char c) {
     switch (c) {
     case '0': return 0x7b6f;
@@ -75,6 +83,28 @@ inline uint32_t HudGlyph(char c) {
     case 'W': return 0x5fed;
     case '.': return 0x0002;
     case '-': return 0x01c0;
+    case 'B': return Glyph3x5("## ", "# #", "## ", "# #", "## ");
+    case 'C': return Glyph3x5(" ##", "#  ", "#  ", "#  ", " ##");
+    case 'E': return Glyph3x5("###", "#  ", "## ", "#  ", "###");
+    case 'H': return Glyph3x5("# #", "# #", "###", "# #", "# #");
+    case 'J': return Glyph3x5("###", "  #", "  #", "# #", " # ");
+    case 'M': return Glyph3x5("# #", "###", "###", "# #", "# #");
+    case 'Q': return Glyph3x5("###", "# #", "# #", "###", "  #");
+    case 'R': return Glyph3x5("## ", "# #", "## ", "# #", "# #");
+    case 'T': return Glyph3x5("###", " # ", " # ", " # ", " # ");
+    case 'U': return Glyph3x5("# #", "# #", "# #", "# #", "###");
+    case 'X': return Glyph3x5("# #", "# #", " # ", "# #", "# #");
+    case 'Y': return Glyph3x5("# #", "# #", " # ", " # ", " # ");
+    case 'Z': return Glyph3x5("###", "  #", " # ", "#  ", "###");
+    case '?': return Glyph3x5("###", "  #", " ##", "   ", " # ");
+    case '#': return Glyph3x5("# #", "###", "# #", "###", "# #");
+    case '+': return Glyph3x5("   ", " # ", "###", " # ", "   ");
+    case '/': return Glyph3x5("  #", "  #", " # ", "#  ", "#  ");
+    case ':': return Glyph3x5("   ", " # ", "   ", " # ", "   ");
+    case '(': return Glyph3x5("  #", " # ", " # ", " # ", "  #");
+    case ')': return Glyph3x5("#  ", " # ", " # ", " # ", "#  ");
+    case '_': return Glyph3x5("   ", "   ", "   ", "   ", "###");
+    case ' ': return 0;
     default: return 0;
     }
 }

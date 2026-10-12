@@ -23,4 +23,22 @@
             }
             cmdbuf.PushConstants(hud_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, constants);
             cmdbuf.Draw(4, 1, 0, 0);
+            if (hud.loading == 2u) {
+                // Composite the same shader's text glyphs over the Eden-styled
+                // panel, in draw order, without a new renderer or EGL context.
+                for (unsigned i = 0; i < overlay.count; ++i) {
+                    auto line = overlay.text[i];
+                    line.x = hud_units(line.x);
+                    line.y = hud_units(line.y);
+                    line.width = render_area.height;
+                    // Constrain glyph shading to its 24-character line rather
+                    // than running the full-screen fragment shader repeatedly.
+                    const VkRect2D text_scissor{
+                        {static_cast<int32_t>(line.x), static_cast<int32_t>(line.y)},
+                        {hud_units(390u), hud_units(24u)}};
+                    cmdbuf.SetScissor(0, text_scissor);
+                    cmdbuf.PushConstants(hud_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, line);
+                    cmdbuf.Draw(4, 1, 0, 0);
+                }
+            }
         }

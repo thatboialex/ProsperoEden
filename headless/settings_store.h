@@ -361,7 +361,7 @@ inline Preferences LoadPreferences(const std::string& file = SettingsFile()) {
     result.mapping = Settings::Mapping(document, Json::json_pointer("/controls/mapping"), kDefaultMapping);
     for (int i = 0; i < kShortcutActionCount; ++i) {
         const auto key = Json::json_pointer(std::string("/controls/shortcuts/") + kShortcutActionKeys[i]);
-        result.shortcuts[i] = KeyIndex(Settings::String(document, key), kShortcutKeys,
+        result.shortcuts[i] = KeyIndex(Settings::String(document, key), kShortcutKeys.data(),
                                        int(std::size(kShortcutKeys)), kDefaultShortcuts[i]);
     }
     if (!ValidShortcuts(result.shortcuts)) result.shortcuts = kDefaultShortcuts;

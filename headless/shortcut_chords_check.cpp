@@ -14,6 +14,9 @@ int main() {
     const auto unchanged = AssignShortcut(bindings, 1, 100);
     assert(unchanged == bindings);
     assert(!ValidShortcuts({0, 0, 2, 5}));
-    assert(!ValidShortcuts({0, 1, 6, 5}));
+    assert(!ValidShortcuts({0, 1, 100, 5}));
+    assert(ValidShortcuts({8, 9, 15, 16})); // L3/R3 and both triggers
+    assert(ValidShortcuts({17, 18, 19, 20})); // shoulder + stick combinations
+    assert(AssignShortcut(kDefaultShortcuts, 2, 16)[2] == 16);
     std::puts("controller shortcut selection, collision and validation: PASS");
 }

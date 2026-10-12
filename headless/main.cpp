@@ -725,6 +725,7 @@ int main(int argc, char** argv) {
         // user's Video/Performance settings. Each launch recomputes the policy.
         [[maybe_unused]] bool pokemon_za_compat = true;
         bool pokemon_za_perf = true;
+        bool pokemon_za_cap_1x = false;
         bool pokemon_za_predication_cpu = false;
         bool fast_rmx_compat = true;
         {
@@ -734,6 +735,8 @@ int main(int argc, char** argv) {
                 else if (option == "pokemon_za=on") pokemon_za_compat = true;
                 else if (option == "pokemon_za_perf=off") pokemon_za_perf = false;
                 else if (option == "pokemon_za_perf=on") pokemon_za_perf = true;
+                else if (option == "pokemon_za_scale=1x") pokemon_za_cap_1x = true;
+                else if (option == "pokemon_za_scale=selected") pokemon_za_cap_1x = false;
                 else if (option == "pokemon_za_predication=cpu") pokemon_za_predication_cpu = true;
                 else if (option == "pokemon_za_predication=default") pokemon_za_predication_cpu = false;
                 else if (option == "fast_rmx=off") fast_rmx_compat = false;
@@ -742,10 +745,13 @@ int main(int argc, char** argv) {
         }
         const auto fast_rmx_profile = Eden::Compatibility::ForFastRmx(game_title, fast_rmx_compat);
         const auto za_perf_profile = Eden::Compatibility::ForPokemonZAPerformance(
-            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_perf);
+            game_title, backend == Eden::GraphicsBackend::Vulkan, pokemon_za_perf,
+            pokemon_za_cap_1x);
         if (game_title == Eden::Compatibility::kPokemonLegendsZA)
             Eden::Report("compatibility", za_perf_profile.enabled ?
-                "Pokemon Legends Z-A: async shaders, internal rendering capped at 1x (output unchanged)" :
+                za_perf_profile.cap_resolution ?
+                    "Pokemon Legends Z-A: async shaders, optional internal 1x cap" :
+                    "Pokemon Legends Z-A: async shaders, selected internal resolution honored" :
                 "Pokemon Legends Z-A: performance profile off (compatibility.txt)");
         // Reset the GC mode between games: otherwise a Fast RMX session would
         // leave the aggressive policy on for the next title in the launcher.
@@ -983,7 +989,8 @@ int main(int argc, char** argv) {
             const auto video = Eden::PreferencesFor(eden_game_title_id(guest));
             const int resolution = fast_rmx_profile.enabled ?
                 std::min(video.resolution, fast_rmx_profile.resolution_ceiling) :
-                za_perf_profile.enabled ? std::min(video.resolution, za_perf_profile.resolution_ceiling) :
+                za_perf_profile.cap_resolution ?
+                    std::min(video.resolution, za_perf_profile.resolution_ceiling) :
                 video.resolution;
             const int filter = video.upscaling_filter;
             Settings::values.resolution_setup.SetValue(resolutions[resolution]);
@@ -1663,7 +1670,7 @@ int main(int argc, char** argv) {
 #ifdef PS5_NATIVE
                         if (game && pad->TakePauseCheats()) {
                             Eden::Report("controls", "Pause / Cheats shortcut received");
-                            Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);
+                            Eden::ShowPausedCheats(system, *pad, backend, game_title, stop_cheat_dialog);
                         }
                         if (game && pad->TakeGraphicsMenu()) {
                             Eden::Report("controls", "Live graphics shortcut received");

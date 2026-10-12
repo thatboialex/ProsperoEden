@@ -78,7 +78,12 @@ public:
     void SetShortcuts(const std::array<int, 4>& value) {
         shortcuts = ValidShortcuts(value) ? value : kDefaultShortcuts;
     }
-    void SetCheatMenuOpen(bool opened) { cheat_menu_open.store(opened, std::memory_order_relaxed); }
+    enum class MenuKey : u8 { none, up, down, accept, back, page_up, page_down };
+    MenuKey TakeMenuKey() { return menu_command.exchange(MenuKey::none); }
+    void SetCheatMenuOpen(bool opened) {
+        menu_command.store(MenuKey::none, std::memory_order_relaxed);
+        cheat_menu_open.store(opened, std::memory_order_release);
+    }
     // Players with a controller (bit per player), and those whose controller came or went.
     unsigned ConnectedPlayers() const { return connected_players.load(); }
     unsigned TakeConnectionChanges() { return connection_changes.exchange(0); }
@@ -117,6 +122,7 @@ private:
     ButtonMapping mapping = kDefaultMapping;
     std::array<int, 4> shortcuts = kDefaultShortcuts;
     std::atomic<bool> cheat_menu_open{false};
+    std::atomic<MenuKey> menu_command{MenuKey::none};
     std::array<Slot, kMaxPlayers> slots{};
     std::array<std::atomic<Grip>, kMaxPlayers> grips{};
     bool owns_user_service = false;

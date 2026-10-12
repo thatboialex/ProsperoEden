@@ -297,12 +297,44 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
     for (const auto& raw : samples) {
         auto sample = is_usable(raw) ? raw : neutral_data(raw.timestamp_us);
         // The shortcuts work from every controller.
-        const std::array<ButtonMask, 6> chord_masks{
-            kButtonTouchPad | kButtonL1, kButtonTouchPad | kButtonR1,
-            kButtonTouchPad | kButtonOptions, kButtonCreate | kButtonL1,
-            kButtonCreate | kButtonR1, kButtonCreate | kButtonOptions};
+        const auto button_mask = [](Eden::ShortcutButton button) -> ButtonMask {
+            switch (button) {
+            case Eden::ShortcutButton::touchpad: return kButtonTouchPad;
+            case Eden::ShortcutButton::create: return kButtonCreate;
+            case Eden::ShortcutButton::options: return kButtonOptions;
+            case Eden::ShortcutButton::l1: return kButtonL1;
+            case Eden::ShortcutButton::r1: return kButtonR1;
+            case Eden::ShortcutButton::l2: return kButtonL2;
+            case Eden::ShortcutButton::r2: return kButtonR2;
+            case Eden::ShortcutButton::l3: return kButtonL3;
+            case Eden::ShortcutButton::r3: return kButtonR3;
+            }
+            return ButtonMask{};
+        };
+        std::array<ButtonMask, kShortcutChords.size()> chord_masks{};
+        for (std::size_t i = 0; i < chord_masks.size(); ++i)
+            chord_masks[i] = button_mask(kShortcutChords[i].first) |
+                             button_mask(kShortcutChords[i].second);
         const auto pressed = sample.buttons;
-        const auto shortcut = DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
+        const bool menu_open = cheat_menu_open.load(std::memory_order_acquire);
+        // Real gamepad controls for the game's Eden pause UI: no keyboard,
+        // numeric commands or game-button leakage. Edge-triggered for parity
+        // with the launcher's normal Up/Down/Cross/Circle navigation.
+        if (menu_open && player == 0) {
+            const auto rising = [&](ButtonMask mask) {
+                return (pressed & mask) != 0 && (last_buttons & mask) == 0;
+            };
+            MenuKey key = MenuKey::none;
+            if (rising(kButtonCircle)) key = MenuKey::back;
+            else if (rising(kButtonCross)) key = MenuKey::accept;
+            else if (rising(kButtonUp)) key = MenuKey::up;
+            else if (rising(kButtonDown)) key = MenuKey::down;
+            else if (rising(kButtonL1)) key = MenuKey::page_up;
+            else if (rising(kButtonR1)) key = MenuKey::page_down;
+            if (key != MenuKey::none) menu_command.store(key, std::memory_order_release);
+        }
+        const auto shortcut = menu_open ? ShortcutEvent<ButtonMask>{} :
+            DispatchShortcut(shortcuts, chord_masks, pressed, last_buttons);
         if (shortcut.action >= 0) {
             if (shortcut.activated) {
                 if (shortcut.action == 0) return_to_menu = true;
@@ -315,8 +347,11 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
             sample.buttons &= ~shortcut.consumed;
         }
         // The native in-game cheat dialog owns input while it is open.
-        if (cheat_menu_open.load(std::memory_order_relaxed))
+        if (menu_open) {
             sample.buttons = 0;
+            slot.select_pulse = 0;
+            slot.select_held = false;
+        }
         // The touchpad on its own: see kSelectTapPolls.
         const bool touch = (pressed & kButtonTouchPad) != 0;
         const bool touched = (last_buttons & kButtonTouchPad) != 0;
@@ -327,7 +362,8 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
         // Reset the touch state first, then mark an active chord. Previously the
         // reset above erased the chord flag when both buttons arrived together,
         // creating an unintended game Minus/Touchpad pulse on release.
-        if (shortcut.action >= 0 || (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonOptions)) != 0)) {
+        if (shortcut.action >= 0 || (touch && (pressed & (kButtonL1 | kButtonR1 | kButtonL2 |
+                kButtonR2 | kButtonL3 | kButtonR3 | kButtonOptions)) != 0)) {
             slot.touch_chord = true;
             slot.select_held = false;
         }
@@ -344,8 +380,8 @@ void Pad::Consume(std::size_t player, std::span<const ps5::pad::Data> samples) {
         for (const auto [mask, button] : fixed)
             engine->SetButtonState(player, button, (sample.buttons & mask) != 0);
         // The game's buttons are digital: the analog triggers count from the threshold.
-        const bool left = sample.triggers.l2 / 255.0f >= trigger_threshold;
-        const bool right = sample.triggers.r2 / 255.0f >= trigger_threshold;
+        const bool left = !menu_open && sample.triggers.l2 / 255.0f >= trigger_threshold;
+        const bool right = !menu_open && sample.triggers.r2 / 255.0f >= trigger_threshold;
         for (int game = 0; game < kGameButtons; ++game) {
             const int pad = mapping[game];
             if (pad == pad_touchpad) continue;  // set_touch

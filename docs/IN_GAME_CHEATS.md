@@ -13,7 +13,11 @@ on the next game launch.
 | Pause and manage cheats | Touchpad + Options |
 | Pause and adjust live graphics filters | Create + Options |
 
-Other choices: Create + L1, Create + R1, Create + Options.
+There are **27 supported two-button choices**, including combinations with
+L3, R3, L1, R1, L2 and R2 (for example **L3 + R3**, **L2 + R2**,
+**L1 + L3**, **R1 + R3**, **Touchpad + L3** and **Create + R2**).
+Single L3/R3 presses remain gameplay controls: shortcuts are intentionally
+two-button chords to avoid accidental activation.
 
 ## Finding and editing all four shortcuts
 
@@ -31,14 +35,15 @@ global editor, returning to your game-specific settings with Circle.
 
 ### Live graphics while a game is running
 
-Default: **Create + Options** (hold Create, then press Options). The game
-pauses and opens a native PS5 numeric dialog. Choose:
+Default: **Create + Options**. The guest pauses and a **Vulkan-rendered
+Eden-style dark-green/lime menu** opens on the same PS5 swapchain as gameplay.
+It contains four named rows: **Bilinear**, **AMD FidelityFX FSR**,
+**Bicubic**, and **Nearest neighbor**. The selected filter has a checked
+switch. Navigate using **D-pad Up/Down**, choose with **Cross**, and return
+to gameplay with **Circle**. L1/R1 also move through the list.
 
-- **1** — Bilinear upscaling
-- **2** — AMD FSR
-- **3** — Bicubic
-- **4** — Nearest neighbor
-- **0** or cancel — resume gameplay
+There is no numeric PS5 keyboard; the menu is drawn on the GPU worker
+while emulated CPU/kernel threads are paused.
 
 The choice changes the **Vulkan presentation filter during the current
 session**, without restarting the game. It does **not** change the
@@ -59,21 +64,18 @@ First place your cheats in the supported game's mods folder, enable the mod
 under **Library → Game Settings → Mods**, and start the game. The module's
 running Build ID must match the cheat file if the file uses a Build ID name.
 
-During gameplay press the configured **Pause / cheats** chord. The emulated
-CPU and kernel pause, and the PS5 native text-entry dialog opens as the
-first console-safe in-game selector. It shows one loaded cheat at a time with
-its current ON/OFF state. On the number pad enter one digit and confirm:
-
-- **1** toggles the shown cheat immediately and saves the selection.
-- **2** shows the next cheat.
-- **3** shows the previous cheat.
-- **0**, or cancel, resumes gameplay.
+During gameplay press the configured **Pause / Cheats** chord (default
+**Touchpad + Options**). The game pauses and an **Eden-themed cheat
+manager** appears: full code names are shown across up to two lines with
+a visible ON/OFF switch on every row. Use the D-pad to select a code,
+**Cross** to toggle it immediately, **L1/R1** for page navigation, and
+**Circle** to close and resume. The list scrolls when there are more than
+seven cheats. No keyboard or numeric input is involved.
 
 No game restart is needed to turn a **loaded** cheat off and back on. A
 different cheat file or a previously disabled mod that was not loaded still
-requires one restart. The native PS5 dialog is a simple initial selector,
-not a custom Vulkan-drawn overlay; it avoids creating a second graphics
-renderer while the game owns the swapchain.
+requires one restart. The Vulkan overlay uses the existing PS5 presentation pipeline, and it
+never creates a second EGL or Vulkan presentation window.
 
 Switching a grouped cheat also respects the existing mutually exclusive
 group rules (for example, incompatible frame-rate options). Single-cheat
@@ -100,6 +102,6 @@ replace the rejected `0x10` with a guessed address.
 
 `/data/prosperoeden/logs/stderr.log` still reports `cheat-vm`
 enabled/opcode/read/write/rejection counters. After toggling, expect
-`cheats: live selection updated` and the next `cheat-vm` report;
+`EDEN_CHEAT_MENU_TOGGLE` and the next `cheat-vm` report;
 a write count above zero is proof of guest memory modification but not
 proof that the intended in-game value changed.

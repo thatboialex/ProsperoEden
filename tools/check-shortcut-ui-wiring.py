@@ -9,6 +9,10 @@ main = (root / "headless/main.cpp").read_text()
 menu = (root / "headless/live_cheat_menu.h").read_text()
 graphics = (root / "headless/live_graphics_menu.h").read_text()
 chords = (root / "headless/shortcut_chords.h").read_text()
+overlay = (root / "headless/in_game_overlay.h").read_text()
+hud_draw = (root / "headless/vulkan_hud_draw.inc").read_text()
+shader = (root / "headless/vulkan_hud.frag").read_text()
+presenter = (root / "headless/graphics.cpp").read_text()
 
 def check(source, needle, label):
     assert needle in source, f"Missing {label}: {needle}"
@@ -37,12 +41,24 @@ start = pad.index('if (touch && !touched)')
 flag = pad.index('if (shortcut.action >= 0 ||', start)
 assert flag > start, "Touchpad chord flag is erased by touch-start reset"
 check(main, 'pad->SetShortcuts(shortcuts);', "loaded shortcuts applied at boot")
-check(main, 'Eden::ShowPausedCheats(system, *pad, game_title, stop_cheat_dialog);',
+check(main, 'Eden::ShowPausedCheats(system, *pad, backend, game_title, stop_cheat_dialog);',
       "pause event invokes cheat dialog")
 check(main, 'Eden::ShowPausedGraphics(system, *pad, backend, stop_cheat_dialog);',
       "graphics event invokes live settings selector")
-check(graphics, '::Settings::values.scaling_filter.SetValue(LiveFilterValue(index));',
+check(graphics, '::Settings::values.scaling_filter.SetValue(LiveFilterValue(selection));',
       "live Vulkan presentation filter mutation")
+check(menu, 'Pad::MenuKey::accept', "Cross toggles named cheats")
+check(menu, 'InGameOverlay::SetEnabled', "toggle reflected in menu")
+check(menu, 'InGameOverlay::Open(InGameOverlay::Mode::cheats', "cheat menu opens styled overlay")
+check(graphics, 'InGameOverlay::Open(InGameOverlay::Mode::graphics', "graphics menu opens styled overlay")
+assert 'TextRequest' not in menu and 'TextRequest' not in graphics, (
+    "Numeric PS5 keyboard must not return to either in-game menu")
+check(overlay, 'std::vector<Row> rows', "named toggle rows")
+check(hud_draw, 'overlay.text[i]', "draw menu text with Vulkan compositor")
+check(shader, 'text.loading == 2u', "native Eden green panel")
+check(presenter, 'InGameOverlay::IsOpen()', "present menu while emulated guest paused")
+check(chords, 'ShortcutButton::l3', "L3 and R3 shortcut support")
+check(chords, 'ShortcutButton::l2', "L2 and R2 shortcut support")
 # The global Settings namespace is NOT Eden::Settings: protect the native
 # C++ source from a compile-only failure CI would otherwise discover very late.
 import re
@@ -53,4 +69,4 @@ check(graphics, 'system.Run();', "graphics menu resumes guest")
 check(menu, 'system.Pause();', "guest pause")
 check(menu, 'system.Run();', "guest resume")
 check(menu, 'system.RegisterCheatList(Cheats::Rebuild()', "live cheat VM update")
-print("PASS: visible four-action shortcuts, controller dispatch, live Vulkan filters and live cheats")
+print("PASS: customizable DualSense shortcuts, controller-operated native Vulkan menus, live named cheats and graphics")

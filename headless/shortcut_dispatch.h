@@ -10,13 +10,14 @@ struct ShortcutEvent {
     bool activated = false;
 };
 // Modal actions take priority over Return when a player holds overlapping chords.
-template <class Mask>
+template <class Mask, std::size_t N>
 constexpr ShortcutEvent<Mask> DispatchShortcut(
-    const std::array<int, 4>& choices, const std::array<Mask, 6>& chords,
+    const std::array<int, 4>& choices, const std::array<Mask, N>& chords,
     Mask pressed, Mask previous) {
     for (int action : {2, 3, 0, 1}) {
+        if (choices[action] < 0 || std::size_t(choices[action]) >= N) continue;
         const Mask mask = chords[choices[action]];
-        if ((pressed & mask) == mask)
+        if (mask != 0 && (pressed & mask) == mask)
             return {action, mask, (previous & mask) != mask};
     }
     return {};
