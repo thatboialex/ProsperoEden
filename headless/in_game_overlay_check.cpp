@@ -18,7 +18,8 @@ int main() {
     assert(frame.background.glyphs[6] == 7); // every cheat has a switch
     assert(frame.count >= 5 && frame.count <= kMaxTextLines);
     assert(frame.text[0].loading == 3); // title
-    assert(frame.text[2].loading == 4); // first focused code
+    assert(frame.text[2].loading == 3); // page counter precedes cheat rows
+    assert(frame.text[3].loading == 4); // first focused code
     Move(1);
     assert(Selected() == 1);
     SetEnabled(1, true);
