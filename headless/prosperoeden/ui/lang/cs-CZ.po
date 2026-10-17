@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Přezdívka: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Žádné mody ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Žádné cheaty"
 
@@ -1159,6 +1163,10 @@ msgstr "Není vybrán soubor ROM"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Chybí složka roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Složka karty SD zatím chybí"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Přeskočit invalidaci CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Přeskočí některé kontroly, když hra změní paměť používanou GPU: rychlejší, textury ale mohou být zastaralé."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Zavaděč Skyline. Vypnuto: hra se spustí bez něj"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline vypnut"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Neprůhledné panely, jasnější písmo a orámované zvýraznění."
@@ -2238,6 +2258,14 @@ msgstr "Tvoje další dobrodružství"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Tvá uložená data se porovnávají s daty na serveru."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "Mody ARC: {0}"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "Mody ARC: {0}"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

@@ -162,6 +162,54 @@ void check_listing(const fs::path& base) {
     require(Summary({}, {}) == "none", "no mods");
 }
 
+// Skyline: a mod whose exefs holds subsdk9 and main.npdm. Either alone is a code mod and nothing
+// more; other mods keep the flags they had. And the ARC mods in the SD card folder.
+void check_skyline(const fs::path& base) {
+    using namespace Eden::Mods;
+    const std::uint64_t game = 0x0100EEEE00005000ULL;
+    const std::string root = (base / "mods").string();
+    const fs::path title = base / "mods" / "0100EEEE00005000";
+    write_text(title / "Skyline" / "exefs" / "subsdk9", "x");
+    write_text(title / "Skyline" / "exefs" / "main.npdm", "x");
+    write_text(title / "Skyline" / "romfs" / "skyline" / "plugins" / "libarcropolis.nro", "x");
+    write_text(title / "Loader only" / "exefs" / "subsdk9", "x");
+    write_text(title / "Descriptor only" / "exefs" / "main.npdm", "x");
+    write_text(title / "Other loader" / "exefs" / "subsdk1", "x");
+    write_text(title / "Other loader" / "exefs" / "main.npdm", "x");
+    write_text(title / "Patch" / "exefs" / "0123456789ABCDEF.pchtxt", "@enabled\n");
+    write_text(title / "Not in exefs" / "romfs" / "subsdk9", "x");
+    write_text(title / "Not in exefs" / "romfs" / "main.npdm", "x");
+    const auto mods = List(root, game);
+    require(mods.size() == 6, "skyline: six mods");
+    const auto kinds = [&](const char* name) {
+        for (const Mod& mod : mods)
+            if (mod.name == name) return mod.kinds;
+        require(false, "skyline: the mod is listed");
+        return 0u;
+    };
+    require(kinds("Skyline") == (kCode | kFiles | kSkyline), "skyline: its loader and descriptor, plus its files");
+    require(kinds("Loader only") == kCode && kinds("Descriptor only") == kCode, "skyline: one of the two is not it");
+    require(kinds("Other loader") == kCode, "skyline: another subsdk is not it");
+    require(kinds("Patch") == kCode && kinds("Not in exefs") == kFiles, "skyline: other mods keep their flags");
+    const Switched off = Switches(mods, {}, {}, {}, false, true);
+    require(Has(off.mods_off, "Skyline") && Has(off.mods_off, "Patch"), "skyline: the Mods switch skips it with the rest");
+    const Switched on = Switches(mods, {"Skyline"}, {}, {}, true, true);
+    require(on.mods_off == std::vector<std::string>{"Skyline"}, "skyline: its own switch skips only it");
+
+    // ARC mods: the folders of ultimate/mods/, counted by name; files and deeper folders are not.
+    const fs::path card = base / "sd";
+    require(ArcModCount(card.string()) == -1, "arc mods: no SD card folder");
+    fs::create_directories(card);
+    require(ArcModCount(card.string()) == 0, "arc mods: an SD card folder with no ultimate/");
+    fs::create_directories(card / "ultimate" / "mods");
+    require(ArcModCount(card.string()) == 0, "arc mods: none yet");
+    write_text(card / "ultimate" / "mods" / "Custom Fighter" / "fighter" / "x" / "model.bin", "x");
+    write_text(card / "ultimate" / "mods" / "Stage" / "stage" / "a.bin", "x");
+    fs::create_directories(card / "ultimate" / "mods" / "Empty");
+    write_text(card / "ultimate" / "mods" / "readme.txt", "not a mod");
+    require(ArcModCount(card.string()) == 3, "arc mods: the folders, not the files or what is inside");
+}
+
 // A game in its own folder in roms/ (issue 168): its mods/ and cheats/, with mods/ and cheats/ of
 // the game files folder.
 void check_game_folder(const fs::path& base) {
@@ -418,6 +466,7 @@ int main() {
     check_ips();
     check_pchtxt();
     check_listing(base);
+    check_skyline(base);
     check_cheats(base);
     check_game_folder(base);
     check_cheats_list(base);

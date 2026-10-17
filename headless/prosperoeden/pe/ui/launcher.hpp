@@ -200,6 +200,18 @@ class Launcher
     void read_home();
     // A game's mods as its list has them: how many, and how many are switched on.
     void count_mods(Game &game, const std::vector<Mod> &mods);
+    // Whether the mods have Skyline, whether it will run, and the ARC mods the SD card folder holds
+    // (-1 when it will not run or the folder is not there). The folder is listed once per refresh of
+    // the games or of a game's mods (arc_mods_), never while drawing.
+    struct SkylineState
+    {
+        bool present = false;
+        bool on = false;
+        int arc_mods = -1;
+    };
+    SkylineState skyline_of(const std::vector<Mod> &mods, bool mods_enabled);
+    // "Skyline, 12 ARC mods"; "Skyline off"; empty for a game without Skyline.
+    static std::string skyline_line(bool skyline, bool on, int arc_mods);
     // A game's mods for the Mods list and its counts: those of cheats alone are in the Cheats list.
     std::vector<Mod> game_mods(std::uint64_t title_id);
     // Games whose file left the game files folder leave the home screen and the Library.
@@ -528,6 +540,8 @@ class Launcher
     bool delete_armed_ = false;                   // the same before a game is deleted
     ListView game_rows_;                          // the game dialog's rows (more than it shows)
     std::vector<Mod> mods_;                       // the game's mods, read when its dialog opens
+    int arc_mods_ = -1;                           // the ARC mods of the SD card folder, as last read
+    bool arc_mods_read_ = false;
     ListView mod_rows_;
     // The game's cheats and its Cheats switch, read with its mods. The Cheats list's first row is
     // that switch, then a row per cheat.

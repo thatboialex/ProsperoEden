@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Takma ad: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "ARC modu yok"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Hile yok"
 
@@ -1159,6 +1163,10 @@ msgstr "ROM seçilmedi"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "roms klasörü yok"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "SD kart klasörü henüz yok"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "CPU geçersiz kılmayı atla"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Oyun GPU'nun kullandığı belleği değiştirdiğinde bazı denetimleri atlar: daha hızlıdır, ancak dokular eski kalabilir."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline yükleyicisi. Kapalı: oyun onsuz başlar"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline kapalı"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Opak paneller, daha parlak metin ve çerçeveli vurgu."
@@ -2238,6 +2258,14 @@ msgstr "Sıradaki maceranız"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Kaydedilen verileriniz sunucudakilerle karşılaştırılıyor."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} ARC modu"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} ARC modu"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

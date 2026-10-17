@@ -498,6 +498,7 @@ void Launcher::draw_home(Canvas &c)
                     ax += chip(c, w, ax, y + 22.0f, tone, room) + 10.0f;
                 };
                 add_chip(game->addons_short.empty() ? game->addons : game->addons_short, Tone::plain);
+                add_chip(skyline_line(game->skyline, game->skyline_on, game->arc_mods), Tone::plain);
                 add_chip(game->language, game->language_note.empty() ? Tone::plain : Tone::warning);
                 y += 56.0f;
                 if (!game->language_note.empty())
@@ -585,6 +586,8 @@ void Launcher::draw_home(Canvas &c)
                     chips.emplace_back(home_.last_addons, Tone::plain);
                 if (home_.last_mods > 0)
                     chips.emplace_back(addons_line({}, home_.last_mods, home_.last_mods_on), Tone::plain);
+                chips.emplace_back(skyline_line(home_.last_skyline, home_.last_skyline_on, home_.last_arc_mods),
+                                   Tone::plain);
                 chips.emplace_back(std::string{tr("Language")} + ": " + home_.last_language, Tone::plain);
             }
             float x = left;

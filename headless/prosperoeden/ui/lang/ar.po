@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "الاسم المستعار: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "لا توجد تعديلات ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "لا توجد شفرات غش"
 
@@ -1159,6 +1163,10 @@ msgstr "لم يُختر ROM"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "لا يوجد مجلد roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "لا يوجد مجلد بطاقة SD بعد"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "تخطي إبطال CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "يتخطى بعض الفحوص عندما تغيّر اللعبة ذاكرة يستخدمها GPU: أسرع، لكن الخامات قد تكون قديمة."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "محمّل Skyline. عند الإيقاف تبدأ اللعبة بدونه"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "إيقاف Skyline"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "لوحات معتمة ونص أكثر سطوعًا وتمييز بإطار."
@@ -2238,6 +2258,14 @@ msgstr "مغامرتك القادمة"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "تُقارَن بيانات حفظك ببيانات الخادم."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "تعديلات ARC: {0}"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "تعديلات ARC: {0}"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

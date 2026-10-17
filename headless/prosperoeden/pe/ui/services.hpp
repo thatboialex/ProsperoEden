@@ -82,6 +82,12 @@ struct Game
     int mods = 0;
     int mods_on = 0;
     bool mods_enabled = true;
+    // Skyline among them (Mod::skyline), whether it will run (its mod and the Mods switch on), and
+    // how many ARC mods the SD card folder holds (Services::arc_mods; -1 without the folder).
+    // Counted with the mods, and only for a game with Skyline.
+    bool skyline = false;
+    bool skyline_on = false;
+    int arc_mods = -1;
     // The download sources that have the game (their names, in the order they are set up in): it
     // can be downloaded from any of them, again once deleted. Empty for a game only on the console.
     std::vector<std::string> sources;
@@ -253,6 +259,9 @@ struct Home
     std::string last_language;
     int last_mods = 0;
     int last_mods_on = 0;
+    bool last_skyline = false; // as Game::skyline, skyline_on and arc_mods
+    bool last_skyline_on = false;
+    int last_arc_mods = -1;
     std::vector<Recent> recents; // at most eight
     std::string system_status;
 };
@@ -430,6 +439,8 @@ struct Mod
     std::vector<Cheat> cheats; // its cheats when it lists several; empty for a single one
     // Cheats and nothing else: the Cheats list has it (Services::cheats), not the Mods list.
     bool cheats_only = false;
+    // Skyline, the code loader of the ARC mods (headless/mods.h kSkyline).
+    bool skyline = false;
 };
 
 // One cheat of a game as the Cheats list has it, whichever file it came from: a mod's cheats
@@ -685,6 +696,12 @@ class Services
     virtual bool make_mods_folder(std::uint64_t)
     {
         return false;
+    }
+    // How many ARC mods the SD card folder holds (the folders in ultimate/mods/, by name); -1 when
+    // there is no SD card folder yet.
+    virtual int arc_mods()
+    {
+        return -1;
     }
 
     // ---- download sources: games on the network, downloaded to the games folder when wanted ----

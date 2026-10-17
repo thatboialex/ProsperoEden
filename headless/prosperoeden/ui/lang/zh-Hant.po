@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "暱稱：{0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "沒有 ARC 模組"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "沒有金手指"
 
@@ -1159,6 +1163,10 @@ msgstr "未選擇 ROM"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "沒有 roms 資料夾"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "還沒有 SD 卡資料夾"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "略過 CPU 失效處理"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "遊戲修改 GPU 使用的記憶體時略過部分檢查：更快，但紋理可能不是最新的。"
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline 載入器。關閉：遊戲將不帶它啟動"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline 關"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "不透明的面板、更亮的文字與帶外框的反白。"
@@ -2238,6 +2258,14 @@ msgstr "你的下一場冒險"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "正在將你的存檔資料與伺服器上的進行核對。"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} 個 ARC 模組"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} 個 ARC 模組"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

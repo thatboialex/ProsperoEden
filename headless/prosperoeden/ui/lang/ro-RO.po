@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Poreclă: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Niciun mod ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Niciun cod"
 
@@ -1159,6 +1163,10 @@ msgstr "Niciun ROM selectat"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Fără folder roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Încă nu există dosarul cardului SD"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Omite invalidarea CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Omite unele verificări când jocul modifică memoria folosită de GPU: mai rapid, dar texturile pot fi învechite."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Încărcător Skyline. Dezactivat: jocul pornește fără el"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline dezactivat"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Panouri opace, text mai luminos și evidențiere cu contur."
@@ -2238,6 +2258,14 @@ msgstr "Următoarea ta aventură"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Salvările tale sunt comparate cu cele de pe server."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "Moduri ARC: {0}"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "Moduri ARC: {0}"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

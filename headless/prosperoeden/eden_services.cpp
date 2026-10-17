@@ -13,6 +13,7 @@
 #include "game_name.h"
 #include "native_directory.h"
 #include "reshade_folder.h"
+#include "sd_card.h"
 #include "pe/core/strings.hpp"
 #include "radio_input.h"
 #include "remote/backends.h"
@@ -1332,8 +1333,11 @@ std::vector<pe::ui::Mod> EdenServices::mods(std::uint64_t title_id) {
         if (mod.kinds & Eden::Mods::kCode) add(TR("Patch"));
         if (mod.kinds & Eden::Mods::kFiles) add(TR("Files"));
         if (mod.kinds & Eden::Mods::kCheats) add(TR("Cheats"));
+        // Skyline's row says what it is and what its switch does, in place of what it is made of.
+        const bool skyline = mod.kinds & Eden::Mods::kSkyline;
+        if (skyline) kind = tr("Skyline loader. Off: the game starts plain");
         result.push_back({mod.name, kind, std::find(off.begin(), off.end(), mod.name) == off.end(), {},
-                          Eden::Mods::CheatsOnly(mod)});
+                          Eden::Mods::CheatsOnly(mod), skyline});
         for (const auto& cheat : mod.cheats)
             result.back().cheats.push_back(
                 {cheat.name, std::find(chosen.begin(), chosen.end(), cheat.id) != chosen.end()});
@@ -1411,6 +1415,9 @@ std::string EdenServices::mods_folder(std::uint64_t title_id) {
         return "roms/" + std::filesystem::path(folder).filename().string() + "/mods/";
     return "mods/" + Eden::Mods::TitleName(title_id) + "/";
 }
+
+// The ARC mods in the SD card folder (headless/mods.h), -1 without it.
+int EdenServices::arc_mods() { return Eden::Mods::ArcModCount(Eden::SdCard::Dir()); }
 
 bool EdenServices::make_mods_folder(std::uint64_t title_id) {
     if (const std::string folder = ModPlaces(title_id).game_folder; !folder.empty())

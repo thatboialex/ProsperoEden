@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Псевдонім: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Немає модів ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Немає читів"
 
@@ -1159,6 +1163,10 @@ msgstr "ROM не вибрано"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Немає папки roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Папки SD-картки ще немає"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Пропуск інвалідації CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Пропускає частину перевірок, коли гра змінює пам'ять, яку використовує GPU: швидше, але текстури можуть застаріти."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Завантажувач Skyline. Вимк.: гра запускається без нього"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline вимк."
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Непрозорі панелі, яскравіший текст і виділення рамкою."
@@ -2238,6 +2258,14 @@ msgstr "Ваша наступна пригода"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Ваші збережені дані звіряються з даними на сервері."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "Модів ARC: {0}"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "Модів ARC: {0}"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

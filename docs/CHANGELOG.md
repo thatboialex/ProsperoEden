@@ -7,6 +7,7 @@ What changed in each release of ProsperoEden, newest first. A release's notes on
 ### New and improved
 
 - **The SD card folder is documented.** `user/sdmc` is what a game sees as `sd:/`; see [SD card folder](INSTALL.md#sd-card-folder). ProsperoEden no longer makes it when it starts, only when a game does, and the log names the folder and says when it is read-only.
+- **Skyline in the Library.** A mod with `subsdk9` and `main.npdm` in its `exefs` folder is recognised as Skyline. For a game that has it the home screen and the Library show `Skyline, 12 ARC mods` (the folders in `ultimate/mods/` of the SD card folder), or `Skyline off` when its mod or the game's Mods switch is off, and its row in the Mods screen says that off starts the game plain. See [Mods](MODS.md#mods).
 
 ## v1.004.000
 

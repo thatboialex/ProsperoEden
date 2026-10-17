@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Kallenavn: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Ingen ARC-modder"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Ingen juksekoder"
 
@@ -1159,6 +1163,10 @@ msgstr "Ingen ROM valgt"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Ingen roms-mappe"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Ingen SD-kortmappe ennå"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Hopp over CPU-invalidering"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Hopper over noen kontroller når et spill endrer minne GPU-en bruker: raskere, men teksturer kan være utdaterte."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline-laster. Av: Spillet starter uten den"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline av"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Ugjennomsiktige paneler, lysere tekst og markering med kontur."
@@ -2238,6 +2258,14 @@ msgstr "Ditt neste eventyr"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "De lagrede dataene dine sammenlignes med serverens."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} ARC-modd"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} ARC-modder"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

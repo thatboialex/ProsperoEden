@@ -141,6 +141,7 @@ void Launcher::apply_games(std::vector<Game> games)
                                      games_[static_cast<std::size_t>(library_.selected)].file :
                                      std::string{};
     games_ = std::move(games);
+    arc_mods_read_ = false;
     for (Game &game : games_)
         game.name = shown_name(fonts_.font, game.name, game.file);
     games_loaded_ = true;
@@ -181,12 +182,17 @@ void Launcher::read_home()
         recent.title = shown_name(fonts_.font, recent.title, recent.file);
     if (home_.last_title_id == 0)
         return;
+    arc_mods_read_ = false;
     const std::vector<Mod> mods = game_mods(home_.last_title_id);
     home_.last_mods = static_cast<int>(mods.size());
     // With the game's Mods switch off none of them is on.
     const bool enabled = mods.empty() || services_.mods_enabled(home_.last_title_id);
     home_.last_mods_on = !enabled ? 0 : static_cast<int>(
         std::count_if(mods.begin(), mods.end(), [](const Mod &mod) { return mod.enabled; }));
+    const SkylineState skyline = skyline_of(mods, enabled);
+    home_.last_skyline = skyline.present;
+    home_.last_skyline_on = skyline.on;
+    home_.last_arc_mods = skyline.arc_mods;
 }
 
 void Launcher::check_games_present()
@@ -244,12 +250,52 @@ void Launcher::count_mods(Game &game, const std::vector<Mod> &mods)
     game.mods_enabled = mods.empty() || services_.mods_enabled(game.title_id);
     game.mods_on = !game.mods_enabled ? 0 : static_cast<int>(
         std::count_if(mods.begin(), mods.end(), [](const Mod &mod) { return mod.enabled; }));
+    const SkylineState skyline = skyline_of(mods, game.mods_enabled);
+    game.skyline = skyline.present;
+    game.skyline_on = skyline.on;
+    game.arc_mods = skyline.arc_mods;
     // The home screen says the same of its game.
     if (game.file == home_.last_file && home_.last_title_id != 0)
     {
         home_.last_mods = game.mods;
         home_.last_mods_on = game.mods_on;
+        home_.last_skyline = game.skyline;
+        home_.last_skyline_on = game.skyline_on;
+        home_.last_arc_mods = game.arc_mods;
     }
+}
+
+Launcher::SkylineState Launcher::skyline_of(const std::vector<Mod> &mods, bool mods_enabled)
+{
+    SkylineState state;
+    state.present = std::any_of(mods.begin(), mods.end(), [](const Mod &mod) { return mod.skyline; });
+    // It runs when its own mod is on, behind the game's Mods switch.
+    state.on = state.present && mods_enabled &&
+               std::any_of(mods.begin(), mods.end(), [](const Mod &mod) { return mod.skyline && mod.enabled; });
+    if (state.on)
+    {
+        if (!arc_mods_read_)
+        {
+            arc_mods_ = services_.arc_mods();
+            arc_mods_read_ = true;
+        }
+        state.arc_mods = arc_mods_;
+    }
+    return state;
+}
+
+std::string Launcher::skyline_line(bool skyline, bool on, int arc_mods)
+{
+    if (!skyline)
+        return {};
+    if (!on)
+        return tr("Skyline off");
+    // The ARC mods are folders in the SD card folder; there is no switch for them here (ARCropolis
+    // has its own manager), so they are counted and not "n of m on".
+    const char *counted = arc_mods < 0 ? tr("No SD card folder yet") :
+                          arc_mods == 0 ? tr("No ARC mods") :
+                          arc_mods == 1 ? tr("{0} ARC mod") : tr("{0} ARC mods");
+    return std::string{tr("Skyline")} + ", " + fill(counted, {std::to_string(arc_mods)});
 }
 
 std::vector<Mod> Launcher::game_mods(std::uint64_t title_id)
@@ -261,6 +307,7 @@ std::vector<Mod> Launcher::game_mods(std::uint64_t title_id)
 
 void Launcher::read_mods(Game &game)
 {
+    arc_mods_read_ = false;
     mods_ = game_mods(game.title_id);
     count_mods(game, mods_);
     read_cheats(game);
@@ -714,6 +761,7 @@ void Launcher::draw_library(Canvas &c)
         else
         {
             add(game->addons_short.empty() ? game->addons : game->addons_short, Tone::plain);
+            add(skyline_line(game->skyline, game->skyline_on, game->arc_mods), Tone::plain);
             add(game->language, game->language_note.empty() ? Tone::plain : Tone::warning);
         }
         y += 56.0f;
@@ -931,6 +979,8 @@ void Launcher::press_game(Key key)
         game.addons.clear();
         game.addons_short.clear();
         game.mods = game.mods_on = 0;
+        game.skyline = game.skyline_on = false;
+        game.arc_mods = -1;
         close_modal();
         read_home();
         refresh_selected_game();

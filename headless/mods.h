@@ -73,6 +73,9 @@ enum : unsigned {
     kCode = 1,    // exefs: patches or replacement code
     kFiles = 2,   // romfs: replacement game files
     kCheats = 4,  // cheats
+    // Skyline: exefs holds subsdk9 and main.npdm (its loader and its process descriptor). Set
+    // beside kCode, which such a mod has too, so every switch treats it as any code mod.
+    kSkyline = 8,
 };
 
 struct Mod {
@@ -139,6 +142,7 @@ inline unsigned Kinds(const fs::path& mod) {
     static constexpr std::string_view kCodeFiles[] = {"main", "main.npdm", "rtld", "sdk", "subsdk0", "subsdk1",
         "subsdk2", "subsdk3", "subsdk4", "subsdk5", "subsdk6", "subsdk7", "subsdk8", "subsdk9"};
     unsigned kinds = 0;
+    bool descriptor = false, loader = false;
     for (const auto& part : ListFolder(mod)) {
         if (!IsFolder(part)) continue;
         const std::string name = Lower(part.path().filename().string());
@@ -153,9 +157,25 @@ inline unsigned Kinds(const fs::path& mod) {
             if (extension == ".ips" || extension == ".pchtxt" ||
                 std::find(std::begin(kCodeFiles), std::end(kCodeFiles), file_name) != std::end(kCodeFiles))
                 kinds |= kCode;
+            // Eden reads these two by exactly these names.
+            descriptor |= file_name == "main.npdm";
+            loader |= file_name == "subsdk9";
         }
     }
+    if (descriptor && loader) kinds |= kSkyline;
     return kinds;
+}
+
+// How many ARC mods the SD card folder holds: the folders in ultimate/mods/, counted by name and
+// not looked into. -1 when there is no SD card folder yet. At most kMaxArcMods are counted.
+inline constexpr int kMaxArcMods = 9999;
+inline int ArcModCount(const std::string& sd_card) {
+    std::error_code error;
+    if (!fs::is_directory(sd_card, error) || error) return -1;
+    int count = 0;
+    for (const auto& entry : ListFolder(fs::path(sd_card) / "ultimate" / "mods"))
+        if (IsFolder(entry) && ++count == kMaxArcMods) break;
+    return count;
 }
 
 // The cheats a mod lists (its cheats/ folder's files, one per build of the game, or a loose cheat

@@ -90,6 +90,7 @@ public:
     bool set_mods_enabled(std::uint64_t title_id, bool enabled) override;
     std::string mods_folder(std::uint64_t title_id) override;
     bool make_mods_folder(std::uint64_t title_id) override;
+    int arc_mods() override;
     std::vector<pe::ui::GameCheat> cheats(std::uint64_t title_id) override;
     bool cheats_enabled(std::uint64_t title_id) override;
     bool set_cheats_enabled(std::uint64_t title_id, bool enabled) override;
