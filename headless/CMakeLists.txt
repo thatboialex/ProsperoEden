@@ -2855,6 +2855,9 @@ if(PS5_NATIVE)
     # filesystem access, the sandbox's download0 without).
     set(paths_source "#include \"${EDEN_PORT_DIR}/storage_paths.h\"
 ${paths_source}")
+    # The SD card folder (sd_card.h) is made when a game opens it, not at every start.
+    eden_patch(paths_source "            void(FS::CreateDirs(path.second));"
+        "            if (path.first != EdenPath::SDMCDir) void(FS::CreateDirs(path.second));")
     write_derived("${PORT_BUILD_DIR}/path_util.cpp" "${paths_source}")
     get_target_property(common_sources common SOURCES)
     file(READ "${PROJECT_SOURCE_DIR}/src/common/thread.cpp" thread_source)
@@ -3079,6 +3082,8 @@ else()
     target_include_directories(eden-shader-cache-check PRIVATE "${PROJECT_SOURCE_DIR}/src")
     target_link_libraries(eden-shader-cache-check PRIVATE video_core)
     target_compile_options(eden-shader-cache-check PRIVATE -fno-rtti)
+    add_executable(eden-sd-card-check "${EDEN_PORT_DIR}/sd_card_check.cpp")
+    target_compile_options(eden-sd-card-check PRIVATE -UNDEBUG)
     add_executable(eden-mods-check "${EDEN_PORT_DIR}/mods_check.cpp")
     target_include_directories(eden-mods-check PRIVATE "${PROJECT_SOURCE_DIR}/src")
     target_link_libraries(eden-mods-check PRIVATE core)

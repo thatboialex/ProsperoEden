@@ -2,6 +2,12 @@
 
 What changed in each release of ProsperoEden, newest first. A release's notes on GitHub are its section here.
 
+## Next version
+
+### New and improved
+
+- **The SD card folder is documented.** `user/sdmc` is what a game sees as `sd:/`; see [SD card folder](INSTALL.md#sd-card-folder). ProsperoEden no longer makes it when it starts, only when a game does, and the log names the folder and says when it is read-only.
+
 ## v1.004.000
 
 This alpha adds post-processing looks and wallpapers of your own, frees more memory, and makes games with many shaders start and start again faster. Performance and compatibility still vary by game.
