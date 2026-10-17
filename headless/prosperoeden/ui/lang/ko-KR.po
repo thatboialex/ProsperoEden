@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "닉네임: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "ARC 모드 없음"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "치트 없음"
 
@@ -1159,6 +1163,10 @@ msgstr "선택한 ROM 없음"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "roms 폴더 없음"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "SD 카드 폴더가 아직 없음"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "CPU 무효화 건너뛰기"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "GPU가 쓰는 메모리를 게임이 바꿀 때 일부 검사를 건너뜁니다. 더 빠르지만 텍스처가 오래된 상태일 수 있습니다."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline 로더. 끔: 게임이 그대로 시작됨"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline 끔"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "불투명한 패널, 더 밝은 글자, 테두리가 있는 강조 표시."
@@ -2238,6 +2258,14 @@ msgstr "다음 모험"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "세이브 데이터를 서버의 데이터와 비교합니다."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "ARC 모드 {0}개"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "ARC 모드 {0}개"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

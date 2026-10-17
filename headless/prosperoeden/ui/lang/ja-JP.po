@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "ニックネーム: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "ARC MODなし"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "チートなし"
 
@@ -1159,6 +1163,10 @@ msgstr "ROMが選ばれていません"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "roms フォルダーなし"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "SDカードフォルダーはまだありません"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "CPU無効化をスキップ"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "GPUが使うメモリをゲームが変更したときの確認を一部省きます。速くなりますが、テクスチャが古いままになることがあります。"
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skylineローダー。オフ: ゲームはそのまま起動します"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline オフ"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "不透明なパネル、明るい文字、枠付きのハイライト。"
@@ -2238,6 +2258,14 @@ msgstr "次の冒険へ"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "セーブデータをサーバーのものと照合しています。"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "ARC MOD {0}個"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "ARC MOD {0}個"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

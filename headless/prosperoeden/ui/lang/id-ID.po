@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Nama panggilan: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Tidak ada mod ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Tidak ada cheat"
 
@@ -1159,6 +1163,10 @@ msgstr "Belum ada ROM dipilih"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Tidak ada folder roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Folder kartu SD belum ada"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Lewati invalidasi CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Melewati beberapa pemeriksaan saat game mengubah memori yang dipakai GPU: lebih cepat, tetapi tekstur bisa usang."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Pemuat Skyline. Nonaktif: game dimulai tanpanya"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline nonaktif"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Panel solid, teks lebih terang, dan sorotan bergaris tepi."
@@ -2238,6 +2258,14 @@ msgstr "Petualangan Anda berikutnya"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Data simpanan Anda dicocokkan dengan yang di server."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} mod ARC"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} mod ARC"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

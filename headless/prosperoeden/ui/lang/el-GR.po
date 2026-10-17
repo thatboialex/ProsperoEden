@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Ψευδώνυμο: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Κανένα mod ARC"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Κανένα cheat"
 
@@ -1159,6 +1163,10 @@ msgstr "Δεν επιλέχθηκε ROM"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Δεν υπάρχει φάκελος roms"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Δεν υπάρχει ακόμη φάκελος κάρτας SD"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "Παράλειψη ακύρωσης CPU"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Παραλείπει κάποιους ελέγχους όταν το παιχνίδι αλλάζει μνήμη που χρησιμοποιεί η GPU: ταχύτερα, αλλά οι υφές μπορεί να είναι παλιές."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Φορτωτής Skyline. Ανενεργός: το παιχνίδι ξεκινά χωρίς αυτόν"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline ανενεργό"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Συμπαγή πλαίσια, φωτεινότερο κείμενο και επισήμανση με περίγραμμα."
@@ -2238,6 +2258,14 @@ msgstr "Η επόμενη περιπέτειά σας"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Τα αποθηκευμένα δεδομένα σου συγκρίνονται με του διακομιστή."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "Mods ARC: {0}"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "Mods ARC: {0}"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

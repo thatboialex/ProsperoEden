@@ -324,6 +324,7 @@ class FakeServices : public ui::Services
     // is cleared.
     bool has_mods = true;
     std::vector<ui::Mod> mods(std::uint64_t) override;
+    int arc_mods() override;
     bool set_mod_enabled(std::uint64_t, const std::string &name, bool enabled) override;
     bool set_cheat_enabled(std::uint64_t, const std::string &mod, const std::string &cheat,
                            bool enabled) override;

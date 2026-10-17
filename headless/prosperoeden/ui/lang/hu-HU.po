@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Becenév: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Nincs ARC-mod"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Nincs csalás"
 
@@ -1159,6 +1163,10 @@ msgstr "Nincs kiválasztott ROM"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Nincs roms mappa"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Még nincs SD-kártya mappa"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "CPU-érvénytelenítés kihagyása"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Kihagy néhány ellenőrzést, amikor a játék a GPU által használt memóriát módosítja: gyorsabb, de a textúrák elavultak lehetnek."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline betöltő. Kikapcsolva: a játék nélküle indul"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline ki"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Átlátszatlan panelek, világosabb szöveg és körvonalas kiemelés."
@@ -2238,6 +2258,14 @@ msgstr "A következő kalandod"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "A mentéseidet összevetjük a szerveren lévőkkel."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} ARC-mod"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} ARC-mod"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp

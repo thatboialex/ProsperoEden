@@ -389,6 +389,7 @@ std::vector<ui::Mod> FakeServices::mods(std::uint64_t title_id)
         {"Sharper textures", tr("Files"), true, {}},
         {"Starter pack", std::string(tr("Files")) + ", " + tr("Cheats"), true, {}},
         {"cheat_lives.txt", tr("Cheats"), true, {}, true},
+        {"Skyline", tr("Skyline loader. Off: the game starts plain"), true, {}, false, true},
     };
     for (ui::Mod &mod : mods)
         mod.enabled = std::find(mods_off_.begin(), mods_off_.end(), mod.name) == mods_off_.end();
@@ -396,6 +397,11 @@ std::vector<ui::Mod> FakeServices::mods(std::uint64_t title_id)
         mods[1].cheats.push_back(
             {cheat, std::find(cheats_on_.begin(), cheats_on_.end(), cheat) != cheats_on_.end()});
     return mods;
+}
+
+int FakeServices::arc_mods()
+{
+    return 12;
 }
 
 std::vector<ui::GameCheat> FakeServices::cheats(std::uint64_t title_id)

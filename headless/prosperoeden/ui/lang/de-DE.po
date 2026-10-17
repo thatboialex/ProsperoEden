@@ -1107,6 +1107,10 @@ msgid "Nickname: {0}"
 msgstr "Spitzname: {0}"
 
 #: pe/ui/library.cpp
+msgid "No ARC mods"
+msgstr "Keine ARC-Mods"
+
+#: pe/ui/library.cpp
 msgid "No cheats"
 msgstr "Keine Cheats"
 
@@ -1159,6 +1163,10 @@ msgstr "Keine ROM-Datei ausgewählt"
 #: pe/ui/browse.cpp
 msgid "No roms folder"
 msgstr "Kein roms-Ordner"
+
+#: pe/ui/library.cpp
+msgid "No SD card folder yet"
+msgstr "Noch kein SD-Karten-Ordner"
 
 #: pe/ui/pairing.cpp
 msgid "No server to pair with: add a RomM server to sources.json, or set save-sync.json up over FTP."
@@ -1772,6 +1780,18 @@ msgstr "CPU-Invalidierung überspringen"
 msgid "Skips some checks when a game changes memory the GPU uses: faster, and textures can be stale."
 msgstr "Überspringt einige Prüfungen, wenn ein Spiel von der GPU genutzten Speicher ändert: schneller, Texturen können aber veraltet sein."
 
+#: pe/ui/library.cpp
+msgid "Skyline"
+msgstr "Skyline"
+
+#: eden_services.cpp
+msgid "Skyline loader. Off: the game starts plain"
+msgstr "Skyline-Lader. Aus: Das Spiel startet ohne ihn"
+
+#: pe/ui/library.cpp
+msgid "Skyline off"
+msgstr "Skyline aus"
+
 #: pe/ui/settings.cpp
 msgid "Solid panels, brighter text and an outlined highlight."
 msgstr "Deckende Flächen, hellerer Text und eine umrandete Markierung."
@@ -2238,6 +2258,14 @@ msgstr "Dein nächstes Abenteuer"
 #: pe/ui/save_sync.cpp
 msgid "Your save data is checked against the server's."
 msgstr "Deine Speicherdaten werden mit denen auf dem Server verglichen."
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mod"
+msgstr "{0} ARC-Mod"
+
+#: pe/ui/library.cpp
+msgid "{0} ARC mods"
+msgstr "{0} ARC-Mods"
 
 #. How many settings of a kind this game has of its own; {0} is a number.
 #: pe/ui/library.cpp
