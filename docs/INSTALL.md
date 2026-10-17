@@ -75,7 +75,7 @@ Keys, firmware and games that an early version kept inside the app's folder (`/d
 
 Names are case-sensitive here, as on the rest of the console's storage; an SD card in a Switch is not. Write a folder with the capitals the game or its loader expects.
 
-A mod can also be installed the way Atmosphere does it, in `sdmc/atmosphere/contents/<title ID>/` with `exefs` and `romfs` inside. It works like a mod in the game's own `mods` folder ([Mods](MODS.md)).
+A mod can also be installed the way Atmosphere does it, in the SD card folder's `atmosphere/contents/<title ID>/` with `exefs` and `romfs` inside. It works like a mod in the game's own `mods` folder ([Mods](MODS.md)). Starting a game also makes an empty `atmosphere/contents/<title ID>/` for it there.
 
 ## Updating
 
