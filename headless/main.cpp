@@ -42,6 +42,7 @@
 #include "log_flusher.h"
 #include "multiplayer_logging.h"
 #include "mods.h"
+#include "sd_card.h"
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "keyboard_applet.h"
@@ -1531,6 +1532,7 @@ int main(int argc, char** argv) {
                 if (const std::string& folder = Eden::Mods::SessionGameFolder(); !folder.empty())
                     Settings::values.external_content_dirs.push_back(folder);
                 system.GetFileSystemController().CreateFactories(*system.GetFilesystem());
+                Eden::Report("sd card", Eden::SdCard::Describe(Eden::SdCard::Dir()).c_str());
                 // The game's own contents, registered as Eden's desktop frontends do before booting a
                 // game (ConfigureFilesystemProvider). An update's data is a patch on the base game's:
                 // the patch manager looks the base up here, and without it applied only the update's

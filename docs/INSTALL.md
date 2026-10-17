@@ -57,6 +57,7 @@ ProsperoEden keeps its own data in `/data/prosperoeden`, separately from the gam
 ├── logs/                               # current and previous session logs, crash reports
 ├── previous-version/PPSA99008-backup/  # the version the last self-update replaced
 └── user/                               # every profile's saves, and emulator user data
+    ├── sdmc/                           # the SD card folder: what a game sees as sd:/
     └── lossless/Lossless.dll           # optional: your copy, for frame generation
 ```
 
@@ -67,6 +68,14 @@ ProsperoEden does not include keys, firmware, games, or other copyrighted consol
 This is the only place it keeps them. If ProsperoEden cannot get access to the console's storage when it starts, the home screen says so and no game can be started; your data is untouched, and closing ProsperoEden and opening it again is the first thing to try. Earlier versions kept a second set of settings and saves in the app's own sandbox in that case, which made saves and settings seem to disappear on consoles where access came and went.
 
 Keys, firmware and games that an early version kept inside the app's folder (`/data/homebrew/PPSA99008/assets`) are moved to `/data/prosperoeden` the first time this version starts, so that replacing the app cannot remove them.
+
+### SD card folder
+
+`user/sdmc` is the console's SD card as a game sees it (`sd:/`). A game that reads or writes files there, such as a mod loader that keeps its mods and settings on the SD card, uses this folder. Copy files into it over FTP like any other. ProsperoEden does not make the folder when it starts: it appears the first time a game starts, and the log says which folder `sd:/` is (a line starting `[ProsperoEden] sd card:`). If the drive is read-only, the game still starts and the log says so.
+
+Names are case-sensitive here, as on the rest of the console's storage; an SD card in a Switch is not. Write a folder with the capitals the game or its loader expects.
+
+A mod can also be installed the way Atmosphere does it, in `sdmc/atmosphere/contents/<title ID>/` with `exefs` and `romfs` inside. It works like a mod in the game's own `mods` folder ([Mods](MODS.md)).
 
 ## Updating
 
