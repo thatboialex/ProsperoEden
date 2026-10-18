@@ -45,6 +45,24 @@ class StageTests(unittest.TestCase):
         self.assertEqual(len(manifest['files']), 5)
         self.assertEqual(len(manifest['archives'][0]['sha256']), 64)
 
+    def test_companion_plugin_is_in_romfs_not_character_storage(self):
+        plugin = self.root / 'libsmashline.nro'
+        plugin.write_bytes(b'\0' * 16 + b'NRO0')
+        module.stage(self.skyline, self.arcropolis, [], self.output, [plugin])
+        self.assertTrue((self.output / module.FRAMEWORK / 'romfs/skyline/plugins/libsmashline.nro').is_file())
+        manifest = json.loads((self.output / 'smash-mods-manifest.json').read_text())
+        self.assertEqual(manifest['plugins'][0]['name'], plugin.name)
+
+    def test_duplicate_or_invalid_plugin_does_not_write_output(self):
+        plugin = self.root / 'libarcropolis.nro'
+        plugin.write_bytes(b'\0' * 16 + b'NRO0')
+        with self.assertRaises(ValueError):
+            module.stage(self.skyline, self.arcropolis, [], self.output, [plugin])
+        plugin.write_bytes(b'wrong')
+        with self.assertRaises(ValueError):
+            module.stage(self.skyline, self.arcropolis, [], self.output, [plugin])
+        self.assertFalse(self.output.exists())
+
     def test_existing_install_is_untouched(self):
         self.output.mkdir()
         sentinel = self.output / 'settings.json'

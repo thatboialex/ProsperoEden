@@ -32,6 +32,10 @@ python3 tools/stage-smash-mods.py \
   --output results/smash-upload/data/prosperoeden
 ```
 
+Add `--plugin /path/to/required-plugin.nro` for each additional Skyline plugin required by
+the character pack (for example, its specified Smashline release). The tool checks the NRO
+header and rejects duplicate plugin names; it does not establish version compatibility.
+
 `--character` may be repeated or omitted to prepare just the frameworks. The output must be a
 new directory. Nothing is installed on the PS5 by this command. A manifest records input archive
 hashes and each staged file's SHA-256 for comparing transfers; these hashes are not upstream

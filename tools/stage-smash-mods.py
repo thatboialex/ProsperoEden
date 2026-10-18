@@ -36,7 +36,7 @@ def archive_files(path):
     return files
 
 
-def stage(skyline, arcropolis, characters, output):
+def stage(skyline, arcropolis, characters, output, plugins=()):
     if output.exists() or output.is_symlink():
         raise ValueError(f'Output already exists; choose a new staging directory: {output}')
     sky = archive_files(skyline)
@@ -69,6 +69,11 @@ def stage(skyline, arcropolis, characters, output):
             add(f'user/sdmc/{name}', data)
         else:
             raise ValueError(f'Unexpected ARCropolis release entry: {name}')
+    for plugin_file in plugins:
+        data = plugin_file.read_bytes()
+        if plugin_file.suffix.lower() != '.nro' or data[0x10:0x14] != b'NRO0':
+            raise ValueError(f'Plugin must be a Skyline NRO: {plugin_file}')
+        add(f'{FRAMEWORK}/romfs/skyline/plugins/{plugin_file.name}', data)
     sources = [skyline, arcropolis]
     for character in characters:
         # Accept one extracted character pack, not a console SD-card distribution.
@@ -97,6 +102,8 @@ def stage(skyline, arcropolis, characters, output):
         'title_id': TITLE,
         'archives': [{'name': p.name, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
                      for p in sources],
+        'plugins': [{'name': p.name, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
+                    for p in plugins],
         'files': [{'path': name, 'sha256': hashlib.sha256(data).hexdigest()}
                   for name, data in sorted(planned.values())],
     }
@@ -122,10 +129,12 @@ def main():
     parser.add_argument('--arcropolis', required=True, type=Path, help='official ARCropolis release.zip')
     parser.add_argument('--character', action='append', type=Path, default=[],
                         help='extracted character pack root; repeat for more packs')
+    parser.add_argument('--plugin', action='append', type=Path, default=[],
+                        help='additional Skyline .nro plugin required by a pack; repeat as needed')
     parser.add_argument('--output', required=True, type=Path, help='new staging directory')
     args = parser.parse_args()
     try:
-        count = stage(args.skyline, args.arcropolis, args.character, args.output)
+        count = stage(args.skyline, args.arcropolis, args.character, args.output, args.plugin)
     except (ValueError, OSError, zipfile.BadZipFile) as error:
         parser.exit(1, f'Staging failed: {error}\n')
     print(f'Staged {count} files in {args.output}. Gameplay compatibility is unverified.')
