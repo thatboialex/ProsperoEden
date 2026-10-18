@@ -10,6 +10,8 @@
 #include "forwarded_launch.h"
 #include "gpu_failure.h"
 #include "guest_fault.h"
+#include "mod_inventory.h"
+#include "mod_diagnostic_build.h"
 #include "jit_list.h"
 #include "boot_trace.h"
 #ifdef PS5_NATIVE
@@ -349,6 +351,7 @@ int main(int argc, char** argv) {
         static Eden::LogFlusher log_flusher;
         if (!log_flusher.Start(Eden::LoadPreferences().immediate_logs)) return 2;
         Eden::Crash::Install(Eden::LogsDir(), Eden::kAppVersion, last_crash.restarted);
+        if (!Eden::ModDiagnostics::Start(Eden::LogsDir())) std::fputs("EDEN_MOD_DIAGNOSTICS initialization failed\n", stderr);
         Eden::BootTrace::Ready(Eden::LogsDir(), Eden::FilesystemAccess());
         Eden::BootTrace::Line("logs and crash handler ready (%s)", Eden::LogsDir().c_str());
         for (const char* folder : {"/app0", Eden::kMountedAppDir, Eden::kInstallDir, "/mnt/sandbox/PPSA99008_000/app0"})
@@ -768,6 +771,8 @@ int main(int argc, char** argv) {
         std::puts("[headless-startup] absolute_paths_ready");
 #endif
 #ifndef PS5_NATIVE
+        Eden::ModDiagnostics::Start(std::string(user_dir) + "/log");
+        Eden::ModDiagnostics::Enable(true);
         Common::Log::Initialize();
 #endif
         if (game) {
@@ -1331,12 +1336,24 @@ int main(int argc, char** argv) {
             Eden::Cheats::Off() = std::move(switched.cheats_off);
             const auto& mods_off = switched.mods_off;
             const std::string mods = Eden::Mods::Summary(all_mods, mods_off, cheats_on);
+            const bool smash_diagnostics = title == 0x01006A800016E000ULL;
+            Eden::ModDiagnostics::Enable(smash_diagnostics || Eden::LoadPreferences().detailed_logging);
+            Settings::values.log_flush_line = smash_diagnostics || Eden::LoadPreferences().immediate_logs;
+            if (smash_diagnostics && !Eden::LoadPreferences().detailed_logging) {
+                Common::Log::Filter diagnostic_filter;
+                diagnostic_filter.ParseFilterString("*:Info Loader:Debug Service.RO:Debug Service.FS:Info Debug.Emulated:Info");
+                Common::Log::SetGlobalFilter(diagnostic_filter);
+                Settings::values.log_flush_line = true;
+            }
+            Eden::ModDiagnostics::Write("session", "title=" + std::string(title_id) + " mods=" + mods +
+                " backend=" + Eden::BackendName(backend) + " version=" + Eden::kAppVersion + " source=" + EDEN_DIAGNOSTIC_BUILD, true);
+            if (smash_diagnostics) Eden::ModDiagnostics::Inventory(Eden::AssetsPath("mods"), Eden::Mods::SessionGameFolder(), Eden::UserDir(), title);
             Settings::values.disabled_addons[title] = mods_off;
             Eden::Report("launch", ("Mods: " + mods).c_str());
             Eden::Crash::SetSession("game " + std::filesystem::path(guest).filename().string() + " (" + title_id +
                                     "), " + Eden::BackendName(backend) + ", resolution " +
                                     Eden::kResolutionKeys[resolution] + ", " + Eden::kUpscalingFilterLabels[filter] +
-                                    ", output " + Eden::kOutputKeys[video.output] + ", " +
+                                    ", source " EDEN_DIAGNOSTIC_BUILD ", output " + Eden::kOutputKeys[video.output] + ", " +
                                     Eden::kRefreshKeys[refresh] + " Hz, mods: " + mods,
                                     true);
         }
@@ -1743,6 +1760,9 @@ int main(int argc, char** argv) {
                 if (auto* process = system.ApplicationProcess()) {
                     Eden::JitList::BuildId build{};
                     const auto& id = system.GetApplicationProcessBuildID();
+                    std::string diagnostic_build;
+                    for (auto byte : id) diagnostic_build += fmt::format("{:02X}", byte);
+                    Eden::ModDiagnostics::Write("guest-build", diagnostic_build, true);
                     std::memcpy(build.data(), id.data(), std::min(build.size(), id.size()));
                     // The game's own modules: the run of code mappings from its entry point.
                     const u64 code_start = GetInteger(process->GetEntryPoint());

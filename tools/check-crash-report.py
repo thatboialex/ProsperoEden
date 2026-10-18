@@ -126,6 +126,8 @@ static int TakeLastCheck(const std::string& logs) {
         const std::string stem = logs + "/crash-2026010" + std::to_string(run) + "-120000";
         Put(stem + ".txt", "report\n");
         Put(logs + "/stderr.prev.log", "that run's messages\n");
+        Put(logs + "/mod-diagnostics.log", "plugin fault\n");
+        Put(logs + "/mod-diagnostics.log.prev", "earlier plugin messages\n");
         Put(logs + "/heap.prev.log", "that run's stages\n");
         Put(eden, "that run's emulator log\n");
         Put(note, stem.substr(logs.size() + 1) + ".txt " + (run % 2 ? "1" : "0") + "\n");
@@ -133,11 +135,12 @@ static int TakeLastCheck(const std::string& logs) {
         CHECK(last.report == stem + ".txt" && last.restarted == (run % 2 == 1));
         CHECK(!Exists(note) && !Exists(logs + "/stderr.prev.log") && !Exists(logs + "/heap.prev.log") && !Exists(eden));
         CHECK(Exists(stem + "-stderr.log") && Exists(stem + "-heap.log") && Exists(stem + "-eden_log.txt"));
+        CHECK(Exists(stem + "-mod-diagnostics.log") && Exists(stem + "-mod-diagnostics.log.prev"));
         CHECK(TakeLast(logs, eden).report.empty());  // announced once
     }
     for (int run = 1; run <= 7; ++run) {
         const std::string stem = logs + "/crash-2026010" + std::to_string(run) + "-120000";
-        for (const char* part : {".txt", "-stderr.log", "-heap.log", "-eden_log.txt"})
+        for (const char* part : {".txt", "-stderr.log", "-heap.log", "-eden_log.txt", "-mod-diagnostics.log", "-mod-diagnostics.log.prev"})
             CHECK(Exists(stem + part) == (run >= 3));  // the five newest stay
     }
     std::puts("TAKELAST_OK");

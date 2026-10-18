@@ -1006,8 +1006,39 @@ string(REPLACE "${idle_old}" [=[void PhysicalCore::Idle() {
 string(REPLACE "${prefetch_old}"
     "            } else {\n                interface->LogBacktrace(process);\n                if (prefetch_abort)\n                    ::Eden::RecordGuestFault(\"guest thread \" + Core::GetThreadName(thread).value_or(\"?\") +\n                                             \" jumped to an unmapped address\");\n            }\n            thread->RequestSuspend(kernel, SuspendType::Debug);"
     physical_core_source "${physical_core_source}")
+# Record the saved guest context before a fault is parked, independently of async logging.
+string(REPLACE "                interface->LogBacktrace(process);"
+    "                ::Eden::CaptureGuestFault(thread, m_core_index, prefetch_abort ? \"prefetch-abort\" : \"breakpoint\");\n                interface->LogBacktrace(process);"
+    physical_core_source "${physical_core_source}")
+string(REPLACE "        if (data_abort) {"
+    "        if (data_abort) {\n            if (!system.DebuggerEnabled()) ::Eden::CaptureGuestFault(thread, m_core_index, \"data-abort\");"
+    physical_core_source "${physical_core_source}")
 write_derived("${PORT_BUILD_DIR}/physical_core.cpp"
-    "#include \"${EDEN_PORT_DIR}/guest_fault.h\"\n#include \"${EDEN_PORT_DIR}/performance.h\"\n#include \"core/arm/debug.h\"\n${physical_core_source}")
+    "#include \"${EDEN_PORT_DIR}/guest_fault_report.h\"\n#include \"${EDEN_PORT_DIR}/guest_fault.h\"\n#include \"${EDEN_PORT_DIR}/performance.h\"\n#include \"core/arm/debug.h\"\n${physical_core_source}")
+file(READ "${PROJECT_SOURCE_DIR}/src/core/hle/kernel/svc/svc_debug_string.cpp" mod_debug_source)
+set(mod_debug_anchor "    LOG_INFO(Debug_Emulated, \"{}\", msg_buffer);")
+string(FIND "${mod_debug_source}" "${mod_debug_anchor}" mod_debug_at)
+if(mod_debug_at LESS 0)
+    message(FATAL_ERROR "Pinned guest debug output changed")
+endif()
+string(REPLACE "${mod_debug_anchor}"
+    "    ::Eden::ModDiagnostics::Write(\"guest-debug\", msg_buffer);\n${mod_debug_anchor}"
+    mod_debug_source "${mod_debug_source}")
+write_derived("${PORT_BUILD_DIR}/svc_debug_string.cpp" "#include \"${EDEN_PORT_DIR}/mod_diagnostics.h\"\n${mod_debug_source}")
+list(REMOVE_ITEM core_sources "hle/kernel/svc/svc_debug_string.cpp")
+list(APPEND core_sources "${PORT_BUILD_DIR}/svc_debug_string.cpp")
+file(READ "${PROJECT_SOURCE_DIR}/src/core/hle/kernel/svc/svc_exception.cpp" mod_break_source)
+set(mod_break_anchor "    bool notification_only = True(reason & BreakReason::NotificationOnlyFlag);")
+string(FIND "${mod_break_source}" "${mod_break_anchor}" mod_break_at)
+if(mod_break_at LESS 0)
+    message(FATAL_ERROR "Pinned guest break handling changed")
+endif()
+string(REPLACE "${mod_break_anchor}"
+    "${mod_break_anchor}\n    ::Eden::ModDiagnostics::Write(\"guest-svc-break\", fmt::format(\"reason={:X} info1={:016X} info2={:016X} notification={}\", static_cast<unsigned>(reason), info1, info2, notification_only), !notification_only);\n    if (!notification_only) ::Eden::CaptureGuestFault(system.Kernel().GetCurrentEmuThread(), system.Kernel().CurrentPhysicalCoreIndex(), \"svc-break\");"
+    mod_break_source "${mod_break_source}")
+write_derived("${PORT_BUILD_DIR}/svc_exception.cpp" "#include \"${EDEN_PORT_DIR}/guest_fault_report.h\"\n${mod_break_source}")
+list(REMOVE_ITEM core_sources "hle/kernel/svc/svc_exception.cpp")
+list(APPEND core_sources "${PORT_BUILD_DIR}/svc_exception.cpp")
 # The guest's tick counter gives when a frame is a little late (headless/guest_clock.h): its
 # rate is applied where Eden applies its own clock settings, and it follows the frames the
 # game hands in (BufferQueueProducer::QueueBuffer, below).
@@ -3137,6 +3168,17 @@ endif()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PORT_ROOT}/sce_sys/param.json")
 write_derived("${PORT_BUILD_DIR}/version/app_version.h"
     "// Generated from sce_sys/param.json (contentVersion).\n#pragma once\n#define EDEN_APP_VERSION \"${app_version}\"\n")
+execute_process(COMMAND git -C "${PORT_ROOT}" rev-parse HEAD
+    OUTPUT_VARIABLE diagnostic_revision OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(NOT diagnostic_revision)
+    set(diagnostic_revision "source-export")
+endif()
+execute_process(COMMAND git -C "${PORT_ROOT}" diff --quiet RESULT_VARIABLE diagnostic_dirty ERROR_QUIET)
+if(diagnostic_dirty)
+    string(APPEND diagnostic_revision "-dirty")
+endif()
+write_derived("${PORT_BUILD_DIR}/version/mod_diagnostic_build.h"
+    "#pragma once\n#define EDEN_DIAGNOSTIC_BUILD \"${diagnostic_revision}\"\n")
 target_include_directories(eden-headless PRIVATE "${PORT_BUILD_DIR}/version")
 target_link_libraries(eden-headless PRIVATE core eden-pad)
 # A game's text entry on the PS5's own on-screen keyboard (system_keyboard.h, keyboard_applet.h).

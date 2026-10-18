@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include "mod_diagnostics.h"
 #include <chrono>
 #include <cstdio>
 #include <string>
@@ -9,6 +10,7 @@ extern "C" int sceKernelDebugOutText(int, const char*);
 namespace Eden {
 // Only concise lifecycle/error text belongs here, never key or ticket contents.
 inline void Report(const char* stage, const char* message) {
+    ModDiagnostics::Write(stage, message);
     char line[1024];
     std::snprintf(line, sizeof(line), "[ProsperoEden] %s: %.900s\n", stage, message);
     std::fputs(line, stderr);

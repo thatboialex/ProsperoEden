@@ -31,6 +31,13 @@ function(eden_guest_code_cache variable)
         "#include \"core/arm/dynarmic/arm_dynarmic_64.h\""
         "#include \"core/arm/dynarmic/arm_dynarmic_64.h\"\n#include \"core/arm/debug.h\"")
     eden_code_cache_replace(text
+        "            m_parent.LogBacktrace(m_process);"
+        "            ::Eden::ModDiagnostics::Write(\"guest-exception\", fmt::format(\"fault_pc={:016X} exception={} instruction={:08X}\", pc, static_cast<unsigned>(exception), m_memory.Read32(pc)), true);\n            m_parent.LogBacktrace(m_process);")
+    eden_code_cache_replace(text
+        "        ReturnException(pc, PrefetchAbort);"
+        "        ::Eden::ModDiagnostics::Write(\"guest-exception\", fmt::format(\"core={} kind=no-execute fault_pc={:016X}\", m_parent.m_core_index, pc), true);\n        ReturnException(pc, PrefetchAbort);")
+    set(text "#include \"${EDEN_PORT_DIR}/mod_diagnostics.h\"\n${text}")
+    eden_code_cache_replace(text
         "    if (last_code_addr != aligned_vaddr) {"
         "    const u64 generation = code_cache_generation.load(std::memory_order_acquire);\n    if (cached_code_generation != generation || last_code_addr != aligned_vaddr) {")
     eden_code_cache_replace(text

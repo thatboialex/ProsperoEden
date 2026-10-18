@@ -629,10 +629,12 @@ Last TakeLast(const std::string& logs_folder, const std::string& eden_log) {
     const std::string report_file = logs_folder + "/" + stem + ".txt";
     if (!std::ifstream(report_file).good()) return last;
     // That run's logs, beside its report.
-    static constexpr const char* kParts[] = {".txt", "-stderr.log", "-heap.log", "-eden_log.txt"};
+    static constexpr const char* kParts[] = {".txt", "-stderr.log", "-heap.log", "-eden_log.txt", "-mod-diagnostics.log", "-mod-diagnostics.log.prev"};
     (void)std::rename((logs_folder + "/stderr.prev.log").c_str(), (logs_folder + "/" + stem + kParts[1]).c_str());
     (void)std::rename((logs_folder + "/heap.prev.log").c_str(), (logs_folder + "/" + stem + kParts[2]).c_str());
     if (!eden_log.empty()) (void)std::rename(eden_log.c_str(), (logs_folder + "/" + stem + kParts[3]).c_str());
+    (void)std::rename((logs_folder + "/mod-diagnostics.log").c_str(), (logs_folder + "/" + stem + kParts[4]).c_str());
+    (void)std::rename((logs_folder + "/mod-diagnostics.log.prev").c_str(), (logs_folder + "/" + stem + kParts[5]).c_str());
     // The five newest reports stay (crash-index.txt lists them, oldest first).
     const std::string index_file = logs_folder + "/crash-index.txt";
     std::vector<std::string> kept;

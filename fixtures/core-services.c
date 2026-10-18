@@ -253,6 +253,12 @@ static void check_audio(u32 sm) {
 #include "core-code-memory.inc"
 
 void guest_main(void) {
+#ifdef EDEN_GUEST_DIAGNOSTIC_FAULT
+    shared_value = 0x1234;
+    PRINT("EDEN_DIAGNOSTIC_FIXTURE");
+    __asm__ volatile("mov x1, #0x1234\nbr %0" : : "r"(0ULL) : "x1", "memory");
+    for (;;) {}
+#endif
 #ifdef EDEN_GUEST_CODE_MEMORY
     check_code_memory();
     PRINT("EDEN_CORE_FIXTURE_PASS");

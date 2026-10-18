@@ -109,3 +109,45 @@ The emulator now requests that thread to stop before signaling its wait events.
 `tools/check-timing-stop.py <build-directory>` forces the old race using the generated
 reset method and the pinned event implementation, then checks the corrected method.
 The build scripts run this regression for both host and PS5 build derivatives.
+
+## Diagnostics collected for Smash
+
+Launching title `01006A800016E000` automatically enables mod diagnostics. No additional
+Skyline TCP client is needed for messages Skyline emits through `svcOutputDebugString`.
+The journal captures those messages directly, before Eden's asynchronous logging queue.
+
+- `/data/prosperoeden/logs/mod-diagnostics.log`: session/source revision, backend, enabled
+  mod summary, installed ExeFS/plugin file paths and SHA-256 hashes, character directory
+  names, game build ID, guest debug messages, custom error details, exceptions and SVC breaks.
+- Guest faults include the live stopped CPU context, general registers and FP control state,
+  module base addresses and a guest backtrace. A no-execute exception records `fault_pc`
+  before the JIT advances; `stopped_pc` can therefore differ by an instruction.
+- `/data/prosperoeden/user/log/eden_log.txt`: engine log, including focused Loader and RO
+  debug messages. Smash flushes each written engine entry; **Detailed logging** can enable
+  broader tracing when reproducing a problem. Extra diagnostic writes can reduce performance.
+- Native crash reports and matching logs stay under `/data/prosperoeden/logs/crash-*`.
+  On the next launch, the journal and its previous segment move beside the native report;
+  the existing retention policy keeps five crash sets. The active journal retains two
+  approximately 8 MiB segments and caps each message at 64 KiB, with an explicit truncation marker.
+- ARCropolis's own logs, when it emits them, remain under
+  `/data/prosperoeden/user/sdmc/ultimate/arcropolis/logs/`. Keep these too.
+
+After a failure, close the app and copy the logs before another reproduction. Keep the
+matching emulator ZIP and character/plugin versions. Native reports must be symbolized
+with the matching build's unstripped ELF, retained by the builder in `build/symbols/`.
+Inventory is bounded to 256 code files; files above 64 MiB are explicitly marked as unhashed.
+Installed-file inventory does not prove that a plugin loaded; correlate it with RO messages
+and the fault's module addresses.
+
+To bundle a copied `/data/prosperoeden` tree locally:
+
+```bash
+python3 tools/collect-smash-diagnostics.py /path/to/copied/prosperoeden \
+  --output results/smash-crash-logs.zip
+```
+
+The collector includes diagnostic logs and a file-hash manifest, excluding game files,
+keys and saves. It does not upload anything. Logging cannot recover messages a plugin
+never emits, or guarantee the final buffered engine entries after a kernel kill or power loss.
+Actual PS5 crash collection still requires console validation; the guest-fault regression
+uses a deliberately faulting homebrew guest in the host emulator.

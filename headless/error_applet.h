@@ -27,6 +27,7 @@ public:
 
     void ShowCustomErrorText(Result error, std::string main_text, std::string detail_text,
                              FinishedCallback finished) const override {
+        ModDiagnostics::Write("game-error-details", main_text + "\n" + detail_text, true);
         Note(error, main_text.empty() ? detail_text : main_text);
         finished();
     }
