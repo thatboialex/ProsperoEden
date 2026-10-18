@@ -12,14 +12,14 @@ def collect(root, output):
     if output.exists():
         raise ValueError('Output already exists')
     files = set()
-    for pattern in ('logs/*', 'user/log/eden_log.txt*',
+    for pattern in ('logs/**/*', 'user/log/**/*', 'user/sdmc/FsAccessLog.txt',
                     'user/sdmc/ultimate/arcropolis/logs/*.log'):
         for file in root.glob(pattern):
             if file.is_symlink() or not file.is_file():
                 continue
             if not file.resolve().is_relative_to(root):
                 raise ValueError('Log directory escapes input root')
-            if file.suffix not in ('.log', '.txt') and not file.name.startswith(('mod-diagnostics.log', 'eden_log.txt')):
+            if not any(suffix in ('.log', '.txt', '.json') for suffix in file.suffixes):
                 continue
             files.add(file)
     if not files:

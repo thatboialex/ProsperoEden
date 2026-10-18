@@ -139,7 +139,7 @@ Inventory is bounded to 256 code files; files above 64 MiB are explicitly marked
 Installed-file inventory does not prove that a plugin loaded; correlate it with RO messages
 and the fault's module addresses.
 
-To bundle a copied `/data/prosperoeden` tree locally:
+To bundle a copied `/data/prosperoeden` tree locally with Python 3.11 or newer:
 
 ```bash
 python3 tools/collect-smash-diagnostics.py /path/to/copied/prosperoeden \
