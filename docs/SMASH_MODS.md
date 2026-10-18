@@ -194,3 +194,23 @@ by selecting an arbitrary overwrite order. Use the authors' supported combined s
 
 The guest OpenFile panic in this capture occurs after return-to-menu and shutdown
 begin; it does not establish the cause of the earlier loading stall.
+
+## Null-call failure after removing the conflicting pack
+
+The next supplied journal inventories three packs on both launches. Its first launch
+has an actual pre-shutdown execution fault at address zero, with the return address
+in `smashline_test`'s `main` at module offset `0x132C0`. Two loaded modules share
+that internal name, so it does not identify a particular pack filename or establish
+whether the fault is an incompatible plugin, missing dependency, or emulator bug.
+The emulator automatically retries; that attempt finishes shader loading in about
+159 seconds and later stalls after ARCropolis startup.
+
+Inspect the exact pack `plugin.nro` binaries and author requirements before replacing
+Smashline versions. For diagnosis, retain exact pack download links, all pack-level
+`plugin.nro` files, and the companion Skyline `.nro` filenames and versions.
+ARCropolis v4.0.8 emits a misleading invalid-file message for collected non-plugin
+patches in `load_and_run_plugins`; those messages alone do not prove missing files.
+
+The previous-session files in this upload repeat the earlier conflicting-pack run.
+They do not capture the reported pack-free black intro. Preserve that baseline in
+a separate log capture before restoring packs, rather than relying on rotated logs.
