@@ -1,0 +1,16 @@
+# Project context
+
+User working preference (2026-10-17 America/Jamaica): proceed autonomously on requested ProsperoEden work, including commits and pushes. Do not ask for routine confirmation. Ask only for missing access or information that prevents progress. This preference remains subject to applicable tool permissions and higher-priority instructions; it does not supply credentials or physical access.
+
+Current objective: run Skyline and ARCropolis (the framework sometimes called "Acropolis") with custom Super Smash Bros. Ultimate characters from https://gamebanana.com/games/6498 on ProsperoEden. Prefer a verified end result over a compatibility claim based only on file placement.
+
+Findings:
+- No prior .context or project AGENTS.md was present in the selected checkout.
+- Existing mods.h and Eden PatchManager support ExeFS replacements (main.npdm, subsdk9) and RomFS overlays. Skyline can be staged as a normal named mod; no new emulator capability has been demonstrated by staging it.
+- Native user storage is /data/prosperoeden/user; its emulated SD root is user/sdmc. ARCropolis reads sd:/ultimate/mods and sd:/ultimate/arcropolis. Changing Settings > Game files does not move this user SD root.
+- tools/stage-smash-mods.py builds a fresh upload tree from official Skyline/ARCropolis ZIPs and optional extracted character directories. It refuses existing output, archive traversal, symlinks, and case-colliding destinations. docs/SMASH_MODS.md describes usage and verification limits.
+- Official releases inspected: Skyline beta and ARCropolis v4.1.1. ARCropolis upstream README describes Yuzu support as unfinished. This is not evidence of a specific ProsperoEden runtime failure; console testing is still required.
+- Official framework archives were downloaded over verified HTTPS to /workspace/mod-downloads. Staged output is in results/smash-framework/data/prosperoeden (ignored). No proprietary game files, game keys, firmware, or actual character packs were present. No console address/access was provided.
+- Onboarding installed local LLVM 18 tools: source /workspace/toolchain/activate.sh. Full host build was blocked fetching the pinned timezone archive from git.eden-emu.dev (proxy 403); a network addition and setup/start instructions were saved in the environment draft, but applying/publishing is not confirmed.
+
+Do not report Smash gameplay, Skyline plugin execution, ARCropolis loading, or PS5 release-build compatibility as passed until those operations have actually been observed. Next validation needs a user-owned Smash installation with its update version, one chosen character pack, and PS5 connection details. Do not ask for secret values in chat.

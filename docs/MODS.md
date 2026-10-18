@@ -24,6 +24,8 @@ roms/<Game>/
 - **Match the game's version.** A patch is made for one version of a game. One made for another version is ignored without a message, so check that the mod matches the update in the game's folder.
 - **Frame rate.** A patch that makes a 30 FPS game run at 60 FPS works on the 60 Hz output ProsperoEden uses. A patch for more than 60 FPS needs the 120 Hz output: set **Refresh rate** to 120 Hz in the game's settings (Triangle in the Library) or in **Settings > Video**. That takes a display that shows 120 Hz and the PS5's own 120 Hz output setting; without them the game runs at 60 Hz. A 60 FPS patch can gain from it too: a game that misses some frames at 60 Hz has twice as many chances to show them. A patch for more frames than the output shows (240 FPS on the 120 Hz output, 120 FPS on the 60 Hz one) still runs at its own pace: the frames the display has no refresh for are left out.
 
+For Smash Ultimate character packs that need Skyline and ARCropolis, see [the staging guide](SMASH_MODS.md). File staging is available; console gameplay compatibility remains unvalidated.
+
 ## Cheats
 
 - **Add cheats.** Cheats are text files in the layout that cheat collections for other emulators of the same console use: each cheat starts with its name in square brackets (`[Infinite health]`), followed by its code lines. Copy the file to the `cheats` folder in the game's folder, as `roms/<Game>/cheats/<build ID>.txt`. The build ID is the code the file is named after in cheat collections: each version of a game has its own, so pick the file for the version you run (the update in the game's folder). The Cheats screen names the exact folder. A mod that comes with a `cheats` folder of its own keeps it: its cheats are listed with the others.
