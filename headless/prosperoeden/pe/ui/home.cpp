@@ -517,7 +517,7 @@ void Launcher::draw_home(Canvas &c)
                                      std::string{tr("Unavailable")},
                      can_configure ? t.value : t.meta},
                     {tr("Mods"),
-                     !has_mods ? std::string{can_configure ? tr("No mods") : tr("Unavailable")} :
+                     !has_mods ? std::string{can_configure ? tr(game->title_id == 0x01006A800016E000ULL ? "No emulator patches" : "No mods") : tr("Unavailable")} :
                      game->mods_enabled ? fill(tr("{0} of {1} on"),
                          {std::to_string(game->mods_on), std::to_string(game->mods)}) :
                          std::string{tr("Off")},

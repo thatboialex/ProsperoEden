@@ -739,7 +739,7 @@ void Launcher::draw_library(Canvas &c)
              can_configure ? std::string{selected_docked_ ? tr("Docked") : tr("Handheld")} : std::string{tr("Unavailable")},
              can_configure ? t.value : t.meta},
             {tr("Mods"),
-             !has_mods ? std::string{can_configure ? tr("No mods") : tr("Unavailable")} :
+             !has_mods ? std::string{can_configure ? tr(game->title_id == 0x01006A800016E000ULL ? "No emulator patches" : "No mods") : tr("Unavailable")} :
              game->mods_enabled ? fill(tr("{0} of {1} on"), {std::to_string(game->mods_on), std::to_string(game->mods)}) :
                                   std::string{tr("Off")},
              has_mods && game->mods_enabled ? t.accent_pale : t.meta},
@@ -1034,7 +1034,7 @@ void Launcher::draw_game_page(Canvas &c, float open)
             return game_docked_ ? tr("Docked") : tr("Handheld");
         case row_mods:
             // With the game's Mods switch off (the Library's), none of them is on.
-            return mods_.empty() ? std::string{tr("No mods")} :
+            return mods_.empty() ? std::string{tr(game.title_id == 0x01006A800016E000ULL ? "No emulator patches" : "No mods")} :
                    !game.mods_enabled ? std::string{tr("Off")} :
                        fill(tr("{0} of {1} on"),
                             {std::to_string(std::count_if(mods_.begin(), mods_.end(),

@@ -151,3 +151,26 @@ keys and saves. It does not upload anything. Logging cannot recover messages a p
 never emits, or guarantee the final buffered engine entries after a kernel kill or power loss.
 Actual PS5 crash collection still requires console validation; the guest-fault regression
 uses a deliberately faulting homebrew guest in the host emulator.
+
+## Interpreting the first PS5 startup logs
+
+The supplied 702c38c PS5 logs show Smash loading, Skyline starting, and
+`libarcropolis.nro` completing its main function. This establishes framework execution,
+not completion of ARCropolis filesystem initialization or working gameplay. Four SD
+character-pack directories are listed. The launcher's emulator patch list does not
+list ARCropolis SD packs, or frameworks bundled directly into a game image.
+
+One attempt failed before guest startup because shader catalog discovery called
+`std::filesystem::relative`, which canonicalizes paths using operations denied on PS5.
+Catalog keys now use lexical relative paths. This fixes that exception; the later attempt
+in the supplied logs had already passed this stage. Its final filesystem-not-initialized
+messages alone do not identify the cause of the subsequent startup stop.
+
+For that remaining issue, retain `user/log/eden_log.txt` (and rotated segments),
+`logs/mod-diagnostics.log` and `.prev`, and the ARCropolis logs under
+`user/sdmc/ultimate/arcropolis/logs/`. Include how long the loading screen remained.
+ARCropolis v4.0.8 detects emulators by checking whether game text is at `0x8004000`
+or `0x8504000`; this PS5 session uses `0x80af0000` and therefore selects its Switch
+behavior. Its `legacy_discovery` flag can bypass preset filtering, but that mismatch
+has not been established as the cause of the startup stop. Do not change game addresses
+or delete saves to work around it.
