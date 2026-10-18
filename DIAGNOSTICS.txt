@@ -1,0 +1,36 @@
+ProsperoEden Smash diagnostics build 702c38c
+
+Install this updated emulator by closing ProsperoEden and replacing its PPSA99008 app
+folder at /data/homebrew/PPSA99008. Use the existing Skyline + ARCropolis v4.0.8 framework
+bundle for Smash 13.0.4. Game files, keys, saves and mods are not included or changed.
+
+Diagnostics are automatic when Smash (01006A800016E000) launches:
+- /data/prosperoeden/logs/mod-diagnostics.log and .prev: session/source/game build ID,
+  installed plugin and ExeFS SHA-256 hashes, mod summary, character directory names,
+  guest debug output, error details, exceptions, SVC breaks and guest fault contexts.
+- Guest fault contexts use the live stopped CPU, with registers, module addresses and
+  backtraces. fault_pc from a no-execute callback can differ from stopped_pc.
+- /data/prosperoeden/user/log/eden_log.txt: engine, Loader and RO diagnostics.
+- /data/prosperoeden/logs/crash-*: native crash report and archived journal/engine logs.
+- /data/prosperoeden/user/sdmc/ultimate/arcropolis/logs/: ARCropolis's own emitted logs.
+
+After a failure, close the app and copy /data/prosperoeden's diagnostic directories.
+Keep the matching emulator ZIP and the exact character/plugin versions. With Python 3.11+:
+  python3 tools/collect-smash-diagnostics.py /path/to/copied/prosperoeden --output crash-logs.zip
+The included collector also gathers engine JSON reports and FsAccessLog.txt when present.
+It excludes game files, keys and saves and does not upload anything.
+
+The journal retains two approximately 8 MiB segments, caps entries at 64 KiB, and marks
+truncation. Inventory is limited to 256 code files; files over 64 MiB are marked unhashed.
+Extra writes can reduce performance. Detailed logging in Settings enables broader traces.
+Five native crash sets are retained. Matching native symbols are retained by the builder
+as build/symbols/ProsperoEden-smash-diagnostics-702c38c.elf.
+
+Verified: journal abrupt-exit survival, concurrent writes, rotation, plugin hash inventory,
+crash-log archival/retention, collector exclusions, a real deliberately faulting homebrew
+in the host emulator, hook/trampoline regressions, native release and package checks.
+Actual PS5 crash collection and Smash/Skyline/ARCropolis gameplay remain unverified.
+Logs cannot recover messages a plugin never emits or guarantee final buffered engine
+entries after a kernel kill or power loss.
+
+Guide: https://github.com/thatboialex/ProsperoEden/blob/feat/smash-framework-staging/docs/SMASH_MODS.md
