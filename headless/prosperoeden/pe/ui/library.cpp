@@ -1222,7 +1222,9 @@ void Launcher::draw_mods_pane(Canvas &c, const Rect &pane, bool active)
     if (mods_.empty())
     {
         text_block(c,
-                   fill(tr("No mods for this game yet. Copy each mod's folder to {0}."),
+                   fill(tr(game.title_id == 0x01006A800016E000ULL ?
+                           "No emulator patch folders found. ARCropolis character packs on the emulated SD card are loaded separately by ARCropolis. Copy emulator patches to {0}." :
+                           "No mods for this game yet. Copy each mod's folder to {0}."),
                         {services_.mods_folder(game.title_id)}),
                    pane.x + 8.0f, baseline(pane.y + 8.0f, 40.0f, t.size_text), t.size_text, 40.0f, t.body,
                    pane.w - 16.0f, 6, kShrink);

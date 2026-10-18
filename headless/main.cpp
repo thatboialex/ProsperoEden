@@ -1349,7 +1349,8 @@ int main(int argc, char** argv) {
                 " backend=" + Eden::BackendName(backend) + " version=" + Eden::kAppVersion + " source=" + EDEN_DIAGNOSTIC_BUILD, true);
             if (smash_diagnostics) Eden::ModDiagnostics::Inventory(Eden::AssetsPath("mods"), Eden::Mods::SessionGameFolder(), Eden::UserDir(), title);
             Settings::values.disabled_addons[title] = mods_off;
-            Eden::Report("launch", ("Mods: " + mods).c_str());
+            Eden::Report("launch", ("Emulator patches: " + mods +
+                (smash_diagnostics ? "; SD character packs are managed by ARCropolis (see diagnostic inventory)" : "")).c_str());
             Eden::Crash::SetSession("game " + std::filesystem::path(guest).filename().string() + " (" + title_id +
                                     "), " + Eden::BackendName(backend) + ", resolution " +
                                     Eden::kResolutionKeys[resolution] + ", " + Eden::kUpscalingFilterLabels[filter] +

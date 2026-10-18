@@ -31,6 +31,9 @@ inline void InventoryFile(const std::filesystem::path& file) {
 }
 inline void Inventory(const std::string& global_mods, const std::string& game_folder,
                       const std::string& user, uint64_t title) {
+    Write("inventory-scope", "External emulator patches only; frameworks bundled into the game are not listed here. SD pack folders are presence checks, not confirmation ARCropolis enabled or loaded them.");
+    Write("inventory-paths", "global_mods=" + global_mods + " game_folder=" + game_folder +
+        " sd_mods=" + user + "/sdmc/ultimate/mods");
     unsigned count = 0;
     for (const auto& root : {Mods::TitleFolder(global_mods, title),
                             game_folder.empty() ? std::string{} : game_folder + "/mods"}) {
@@ -49,6 +52,7 @@ inline void Inventory(const std::string& global_mods, const std::string& game_fo
         if (++count > 256) { Write("inventory", "character directory limit reached"); break; }
         Write("character-pack", pack.path().filename().string());
     }
+    Write("character-pack-count", std::to_string(count));
     Write("inventory-complete", "ARCropolis logs: " + user + "/sdmc/ultimate/arcropolis/logs", true);
 }
 }

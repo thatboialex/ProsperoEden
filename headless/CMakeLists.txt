@@ -2472,7 +2472,7 @@ eden_patch(fx_effect_source [=[    std::vector<std::filesystem::path> effect_fil
             Common::FS::DirEntryFilter::File);
         std::sort(found.begin(), found.end());
         for (auto& path : found) {
-            const auto name = Common::FS::PathToUTF8String(std::filesystem::relative(path, folder));
+            const auto name = Common::FS::PathToUTF8String(path.lexically_relative(folder));
             if (folder == own) {
                 own_names.insert(name);
             } else if (own_names.contains(name)) {
@@ -2484,6 +2484,10 @@ eden_patch(fx_effect_source [=[    std::vector<std::filesystem::path> effect_fil
 
     for (const auto& [file, folder] : effect_files) {
         FxEffectDesc desc = DescribeEffect(file, folder);]=])
+# These are catalog keys for paths obtained by walking root, not filesystem identity checks.
+# relative() resolves symlinks through canonical(), whose lstat is denied on PS5 even
+# for readable files. Keep shader discovery independent of that unsupported operation.
+eden_patch(fx_effect_source "std::filesystem::relative(path, root)" "path.lexically_relative(root)")
 string(PREPEND fx_effect_source "#include <set>\n#include <utility>\n#include \"${EDEN_PORT_DIR}/reshade_folder.h\"\n")
 write_derived("${PORT_BUILD_DIR}/fx_effect.cpp" "${fx_effect_source}")
 list(REMOVE_ITEM video_sources post_processing/fx_preset.cpp post_processing/fx_effect.cpp)
