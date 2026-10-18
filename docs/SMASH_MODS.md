@@ -248,3 +248,18 @@ they can overlap other work. High storage or journal I/O totals identify storage
 latency, but background journal I/O is not automatically a blocked guest thread.
 The same 247 file-size patch warnings persist in the zero-pack capture, so they
 are not evidence specific to Infernape.
+
+## Pin Smashline for Smash 13.0.4
+
+Use [Smashline v1.6.6](https://github.com/HDR-Development/smashline/releases/tag/v1.6.6)
+for the current 13.0.4 moveset test. v1.6.7 explicitly changes to 13.0.5 offsets;
+v1.6.8 inherits those changes. Exported API names alone do not establish game-version
+compatibility. The earlier recommendation of v1.6.8 was incorrect for this target.
+
+The Infernape stage-loading capture first reports `NotRelocated` in
+`src/create_agent.rs:1181`, then repeats Smashline panic dialogs and BRK exceptions.
+ARCropolis completes the motion-list patch before this first panic. Replacing
+`libsmashline_plugin.nro` with the official v1.6.6 binary corrects the identified
+version mismatch; a PS5 match retest is still required. Keep only one active copy.
+Official binary SHA-256:
+`05fca8fa5c745a2dc6578e9eb3f1ace187a9b45bb9efbf03af2ef96dbbaf46d2`.
