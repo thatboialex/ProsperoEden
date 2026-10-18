@@ -48,8 +48,7 @@ def stage(skyline, arcropolis, characters, output, plugins=()):
     plugin = CONTENT + 'romfs/skyline/plugins/libarcropolis.nro'
     if arc.get(plugin, b'')[0x10:0x14] != b'NRO0':
         raise ValueError('ARCropolis ZIP must contain its Smash libarcropolis.nro (NRO0)')
-    if not any(name.startswith('ultimate/arcropolis/resources/') for name in arc):
-        raise ValueError('ARCropolis ZIP is missing ultimate/arcropolis/resources')
+    # Releases such as v4.0.8 embed menu resources and ship only the plugin NRO.
     planned = {}
 
     def add(name, data):

@@ -11,7 +11,10 @@ describes Yuzu-family support as unfinished.
 ## Prepare files
 
 Download `skyline.zip` from the [Skyline releases](https://github.com/skyline-dev/skyline/releases)
-and `release.zip` from the [ARCropolis releases](https://github.com/Raytwo/ARCropolis/releases).
+and `release.zip` from the [ARCropolis v4.0.8 release](https://github.com/Raytwo/ARCropolis/releases/tag/v4.0.8)
+for **Smash 13.0.4**. That tag checks for game version 13.0.4; v4.1.1 checks for 13.0.5
+and will refuse 13.0.4. v4.0.8 embeds menu resources and its ZIP contains only the plugin;
+a separate `ultimate/arcropolis/resources` directory is not required for that release.
 Use a Smash update supported by the selected framework and character/plugin versions. Read each
 character pack's requirements: a cosmetic replacement and a new moveset can need different plugins.
 The tool does not download characters or resolve plugin dependencies.

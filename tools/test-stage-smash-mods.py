@@ -45,6 +45,13 @@ class StageTests(unittest.TestCase):
         self.assertEqual(len(manifest['files']), 5)
         self.assertEqual(len(manifest['archives'][0]['sha256']), 64)
 
+    def test_plugin_only_release_for_smash_13_0_4(self):
+        archive = self.archive('arcropolis-v4.0.8.zip', {
+            module.CONTENT + 'romfs/skyline/plugins/libarcropolis.nro': b'\0' * 16 + b'NRO0',
+        })
+        self.assertEqual(module.stage(self.skyline, archive, [], self.output), 3)
+        self.assertTrue((self.output / module.FRAMEWORK / 'romfs/skyline/plugins/libarcropolis.nro').is_file())
+
     def test_companion_plugin_is_in_romfs_not_character_storage(self):
         plugin = self.root / 'libsmashline.nro'
         plugin.write_bytes(b'\0' * 16 + b'NRO0')
