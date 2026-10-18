@@ -174,3 +174,23 @@ or `0x8504000`; this PS5 session uses `0x80af0000` and therefore selects its Swi
 behavior. Its `legacy_discovery` flag can bypass preset filtering, but that mismatch
 has not been established as the cause of the startup stop. Do not change game addresses
 or delete saves to work around it.
+
+## Conflict found in the next PS5 run
+
+The 1248936 run finishes all 3704 cached pipelines in about 25 seconds, runs Skyline,
+and completes ARCropolis main. It then reports a conflict between
+`(Additional Slot) All movesets` and
+`(Hype Bros) Additional Slots/ui/param/database/ui_chara_db.prc`.
+ARCropolis v4.0.8 discovery rejects a conflicting root, repeats discovery, and tries
+to display a conflict error. The supplied log does not show discovery completing.
+
+Close the emulator and temporarily move `(Additional Slot) All movesets` out of
+`/data/prosperoeden/user/sdmc/ultimate/mods/`, keeping a backup outside the scanned
+mods directory. If remaining movesets depend on that pack, move those out as well
+for the isolation run. A framework-only boot with the pack directories held outside
+`mods/` distinguishes this mod-set problem from another emulator startup problem.
+Restore only a compatible set; two different `ui_chara_db.prc` files cannot be merged
+by selecting an arbitrary overwrite order. Use the authors' supported combined setup.
+
+The guest OpenFile panic in this capture occurs after return-to-menu and shutdown
+begin; it does not establish the cause of the earlier loading stall.
