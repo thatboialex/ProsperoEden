@@ -1,0 +1,36 @@
+ProsperoEden startup fix and diagnostics - source 1248936
+
+Close ProsperoEden. Extract this ZIP and replace the installed PPSA99008 app
+folder at /data/homebrew/PPSA99008 with the included PPSA99008 folder.
+Keep /data/prosperoeden (games, keys, saves, mods and settings).
+This is an emulator update; the existing Smash 13.0.4 framework bundle is unchanged.
+
+Fixed: shader catalog discovery no longer calls filesystem canonical() for
+Bloom.fx; readable PS5 files were rejected with Operation not permitted.
+Clarified: No emulator patches refers to emulator patch folders. ARCropolis
+character packs on the emulated SD card are loaded separately by ARCropolis.
+Added: inventory roots/count/scope, engine warnings/errors in the bounded mod
+journal, and durable startup markers around GPU start, CPU ready, shader cache
+loading and guest execution.
+
+The first supplied PS5 logs show Skyline running and ARCropolis completing
+main(), with four character-pack folders visible. They do NOT show completion
+of ARCropolis filesystem setup or working Smash gameplay. A later Smash attempt
+ends before shader-cache completion; another game reaches about 30 FPS.
+The shader fix addresses the confirmed pre-launch exception; the later Smash
+startup stop remains unexplained by these supplied logs.
+
+After a failed Smash attempt, close the app and copy these directories:
+/data/prosperoeden/logs/
+/data/prosperoeden/user/log/
+/data/prosperoeden/user/sdmc/ultimate/arcropolis/logs/ (if present)
+
+The included Python collector can zip those logs from a copied /data/prosperoeden:
+python3 tools/collect-smash-diagnostics.py /path/to/copied/prosperoeden --output smash-logs.zip
+It excludes the normal game, save and key paths and uploads nothing.
+Keep both current and previous logs; launching another game rotates the journal.
+Report how long Smash remained on the loading screen. No need to delete saves
+or reinstall the frameworks already observed executing.
+
+Matching native symbols retained by the builder:
+build/symbols/ProsperoEden-smash-startup-1248936.elf

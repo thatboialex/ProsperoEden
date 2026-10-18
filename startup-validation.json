@@ -1,0 +1,15 @@
+{
+  "source": "12489365346fa017892809dd1e3d2386389213d4",
+  "native_build_and_required_package_checks": "PASS",
+  "host_build": "PASS",
+  "actual_guest_fault_journal": "PASS",
+  "guest_fault_evidence": "results/guest-diagnostics-m60eqhxw",
+  "collector_tests": {
+    "passed": 2
+  },
+  "journal_tests": "PASS",
+  "ps5_gameplay": "UNVERIFIED",
+  "confirmed_fix": "Remove canonicalization from shader catalog relative keys",
+  "remaining": "Supplied logs do not explain subsequent Smash startup stop",
+  "native_eboot_sha256": "2728382af36bc4e667c015233f0ab5ef3980ae438e7621c910b9a205c6cb24c4"
+}
