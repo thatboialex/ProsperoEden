@@ -17,7 +17,7 @@ r = subprocess.run([str(cache / 'build/bin/eden-headless'),
 journal = (work / 'user/log/mod-diagnostics.log').read_text(errors='replace')
 assert r.returncode == 1, 'Planned guest fault must fail without a native signal crash'
 assert b'EDEN_GUEST_MEMORY given back' in r.stderr, 'Guest fault must release guest memory'
-for marker in ('guest-debug', 'EDEN_DIAGNOSTIC_FIXTURE', 'guest-fault', 'prefetch-abort',
+for marker in ('startup-stage', 'guest-run begin', 'engine-warning', 'guest-debug', 'EDEN_DIAGNOSTIC_FIXTURE', 'guest-fault', 'prefetch-abort',
                'fault_pc=0000000000000000', 'stopped_pc=', 'x1=0000000000001234', 'module base=', 'frame pc='):
     assert marker in journal, marker
-print('Guest diagnostics PASS: actual guest debug output, PC/registers, module map and backtrace survive a guest fault')
+print('Guest diagnostics PASS: engine warnings, actual guest debug output, PC/registers, module map and backtrace survive a guest fault')
