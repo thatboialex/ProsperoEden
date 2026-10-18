@@ -1,0 +1,36 @@
+ProsperoEden focused Smash performance candidate - runtime source 6cd74e1
+
+Close the app and replace /data/homebrew/PPSA99008 with the included PPSA99008.
+Keep /data/prosperoeden. Keep the same four framework plugins and zero character
+packs as the last comparison run. No new framework/plugin binaries are included.
+
+In Settings > Diagnostics, leave Write logs at once OFF for this performance test.
+Diagnostics remain enabled automatically for Smash. Run for 1-2 minutes after the
+shader cache finishes, then return to the menu and close the app.
+
+Copy /data/prosperoeden/logs/ including heap.log, mod-diagnostics.log and previous
+segments if the app restarted. Include /data/prosperoeden/user/log/ if available.
+The included Python collector can package copied diagnostic folders:
+python3 tools/collect-smash-diagnostics.py /path/to/copied/prosperoeden --output performance-logs.zip
+
+Changes: batch normal journal records through the one-second log flusher, avoid
+forced per-line engine flushes, preserve durable guest-fault drains, and record
+cumulative CPU owner samples plus JIT/storage/GPU-worker wait/journal-I/O counters
+every five seconds. Pending journal threshold 256KiB applies backpressure; no
+intentional record dropping. Native signal/hard-kill/power-loss tails may lose
+recent buffered normal records (about a second, longer if storage is stalled).
+
+The last run with zero character packs still fell to 0.149 FPS, despite all four
+framework plugins finishing initialization. Its shader cache finished in24532ms;
+3916 journal events were recorded and247 file-size patch warnings persisted.
+These facts do not establish a plugin-specific root cause. The previous diagnostic
+version added hot-path file operations; this candidate removes that overhead.
+The main cause of the continuing crawl/black picture still requires measured data.
+No PS5 speedup, black-screen fix, or working custom-character gameplay is claimed.
+
+Counter interpretation: values are cumulative and overlap. Difference snapshots.
+gpu_queue_wait means GPU worker idle waiting for incoming work, not hardware GPU
+execution. Draw/dispatch are CPU-side processing. Fence/present/full-queue timers
+measure producer waits. Unsupported/stale CPU samples must not be read as zero.
+
+Matching native symbols retained: build/symbols/ProsperoEden-smash-performance-6cd74e1.elf

@@ -1,0 +1,21 @@
+{
+  "character_pack_count": [
+    "0"
+  ],
+  "completed_plugins": [
+    "rom:/skyline/plugins/libarcropolis.nro",
+    "rom:/skyline/plugins/libparam_hook.nro",
+    "rom:/skyline/plugins/libsmashline_plugin.nro",
+    "rom:/skyline/plugins/libthe_csk_collection.nro"
+  ],
+  "frame_windows": 30,
+  "fps_min": 0.149,
+  "fps_max": 15.187,
+  "file_size_patch_failures": 247,
+  "guest_exceptions": 0,
+  "journal_bytes": 640142,
+  "journal_events": 3916,
+  "shader_cache_ms": 24532,
+  "root_cause_proven": false,
+  "confirmed_code_overhead": "per-record journal stat/open/write/close and forced engine per-line flush"
+}

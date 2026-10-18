@@ -1,0 +1,14 @@
+{
+  "runtime_source": "6cd74e114be469de4464f3c24488e865d94c50e4",
+  "native_compile": "PASS",
+  "required_checks": "PASS (checks resumed after updating no-readback guard for release CPU/atomic sampling)",
+  "package_integrity_import_alignment": "PASS",
+  "host_logging_runtime_build": "PASS",
+  "actual_guest_fault_batched_history": "PASS results/guest-diagnostics-eq8o33ja",
+  "journal_tests": "PASS: blocked storage, 200 messages/one batch, periodic flush, stop flush, immediate mode, durable abrupt exit, concurrency, rotation, bounds",
+  "collector_tests_passed": 2,
+  "crash_report_tests": "PASS",
+  "ps5_speedup": "UNVERIFIED",
+  "root_cause_of_continuing_crawl": "NOT YET MEASURED",
+  "eboot_sha256": "e75c266fc4b9d4505c52fee17295e0396a8626e3168706da3be80643ca42b2fb"
+}
