@@ -1658,11 +1658,15 @@ int main(int argc, char** argv) {
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
                 Eden::Stall::Trace("main gpu_start");
 #endif
+                Eden::ModDiagnostics::Write("startup-stage", "gpu-start begin", true);
                 system.GPU().Start();
+                Eden::ModDiagnostics::Write("startup-stage", "gpu-start complete", true);
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
                 Eden::Stall::Trace("main gpu_started");
 #endif
+                Eden::ModDiagnostics::Write("startup-stage", "cpu-ready begin", true);
                 system.GetCpuManager().OnGpuReady();
+                Eden::ModDiagnostics::Write("startup-stage", "cpu-ready complete", true);
                 passed("cpu_manager_ready");
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
                 Eden::Stall::Trace("main shader_cache");
@@ -1672,6 +1676,7 @@ int main(int argc, char** argv) {
                 if (Settings::values.use_disk_shader_cache.GetValue() && !graphics_error) {
                     // Every cached pipeline is built before the game starts; report progress
                     // every five seconds so a slow build can be told apart from a stalled one.
+                    Eden::ModDiagnostics::Write("startup-stage", "shader-cache begin", true);
                     std::atomic<size_t> built{0}, total{0};
                     std::atomic<bool> counted{false};
                     Eden::Loading::Set(Eden::Loading::Step::shaders);
@@ -1780,7 +1785,9 @@ int main(int argc, char** argv) {
                 }
                 Eden::TakeGuestFault(); // Nothing from an earlier session belongs to this one.
                 Eden::Loading::Set(Eden::Loading::Step::starting);
+                Eden::ModDiagnostics::Write("startup-stage", "guest-run begin", true);
                 system.Run();
+                Eden::ModDiagnostics::Write("startup-stage", "guest-run returned", true);
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
                 Eden::Stall::Trace("main running");
                 Eden::Stall::Disarm();

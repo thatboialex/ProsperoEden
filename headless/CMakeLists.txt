@@ -270,7 +270,23 @@ string(REPLACE "${old_error_flush}" [=[            if (write_limit_exceeded)
                 file->Flush();
             }]=] logging_source "${logging_source}")
 string(REPLACE "${old_log_file}" "    std::optional<FS::IOFile> file;\n    std::atomic<long long> error_flushed_ms{-1000};  // when an error line was last flushed" logging_source "${logging_source}")
-write_derived("${PORT_BUILD_DIR}/logging.cpp" "#include <atomic>\n#include <chrono>\n${logging_source}")
+# Keep warnings/errors with the mod journal when the user copies just logs/.
+# This backend never calls Common::Log, so a journal write failure cannot recurse.
+string(FIND "${logging_source}" "        lambda(static_cast<Backend&>(color_console_backend));" journal_anchor)
+if(journal_anchor LESS 0)
+    message(FATAL_ERROR "Pinned logging backend dispatch changed")
+endif()
+string(REPLACE "        lambda(static_cast<Backend&>(color_console_backend));" [=[        lambda(static_cast<Backend&>(color_console_backend));
+        struct ModJournalBackend final : Backend {
+            void Write(const Entry& entry) noexcept override {
+                if (entry.log_level >= Level::Warning && ::Eden::ModDiagnostics::IsEnabled())
+                    ::Eden::ModDiagnostics::Write("engine-warning", FormatLogMessage(entry));
+            }
+            void Flush() noexcept override {}
+        };
+        static ModJournalBackend journal;
+        lambda(static_cast<Backend&>(journal));]=] logging_source "${logging_source}")
+write_derived("${PORT_BUILD_DIR}/logging.cpp" "#include <atomic>\n#include <chrono>\n#include \"${EDEN_PORT_DIR}/mod_diagnostics.h\"\n${logging_source}")
 get_target_property(common_sources common SOURCES)
 list(REMOVE_ITEM common_sources logging.cpp)
 list(APPEND common_sources "${PORT_BUILD_DIR}/logging.cpp")
