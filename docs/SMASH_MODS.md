@@ -240,3 +240,11 @@ are explicitly marked and must not be read as zero load. Counters overlap and mu
 be differenced between snapshots, not summed into a CPU/GPU utilization percentage.
 Focused timing adds clock reads on measured paths. This candidate needs hardware
 comparison; no PS5 speedup or black-screen fix has been established.
+
+Interpretation: `gpu_queue_wait` is the GPU worker waiting for incoming work,
+not physical GPU execution time. `gpu_dispatch` and `draw` measure CPU processing
+of GPU commands. Fence/presentation/queue-full timers measure producer waits;
+they can overlap other work. High storage or journal I/O totals identify storage
+latency, but background journal I/O is not automatically a blocked guest thread.
+The same 247 file-size patch warnings persist in the zero-pack capture, so they
+are not evidence specific to Infernape.

@@ -7,6 +7,7 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 program = r'''
 #include "mod_inventory.h"
+#include "log_flusher.h"
 #include <atomic>
 #include <cassert>
 #include <condition_variable>
@@ -83,6 +84,17 @@ int main(int argc, char** argv) {
     Write("error-detail", std::string(70000, 'X'));
     Flush();
     assert(read(log).find("[truncated at 64 KiB]") != std::string::npos);
+    SetImmediate(true); Write("immediate", "visible-now");
+    assert(read(log).find("visible-now") != std::string::npos);
+    SetImmediate(false);
+    // Exercise the actual periodic integration, not just explicit Flush calls.
+    Eden::LogFlusher flusher; assert(flusher.Start());
+    Write("periodic", "visible-after-background-flush");
+    for (unsigned i = 0; i < 30 && read(log).find("visible-after-background-flush") == std::string::npos; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    assert(read(log).find("visible-after-background-flush") != std::string::npos);
+    Write("stop", "drained-on-stop"); flusher.Stop();
+    assert(read(log).find("drained-on-stop") != std::string::npos);
 }
 '''
 with tempfile.TemporaryDirectory(prefix='eden-mod-diagnostics-') as temporary:
@@ -91,4 +103,4 @@ with tempfile.TemporaryDirectory(prefix='eden-mod-diagnostics-') as temporary:
     subprocess.run(['c++', '-std=c++20', '-O2', '-pthread', '-Wall', '-Wextra', '-Werror',
                     '-I' + str(root / 'headless'), str(work / 'check.cpp'), '-o', str(work / 'check'), '-lcrypto', '-Wl,--wrap=write'], check=True)
     subprocess.run([str(work / 'check'), str(work / 'logs')], check=True, timeout=10)
-print('Mod diagnostics PASS: batched writes, producers survive blocked storage, durable abrupt exit, concurrency, rotation and bounds')
+print('Mod diagnostics PASS: batched writes, producers survive blocked storage, durable abrupt exit, periodic/stop flush, immediate mode, concurrency, rotation and bounds')

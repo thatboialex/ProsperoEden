@@ -2032,7 +2032,7 @@ int main(int argc, char** argv) {
                             lock.lock();
                         }
 #else
-                        if (smash_diagnostics) {
+                        if (system.GetApplicationProcessProgramID() == 0x01006A800016E000ULL) {
                             while (!completion->wake.wait_for(lock, std::chrono::seconds(5), completed)) {
                                 lock.unlock();
                                 Eden::SmashPerformanceSnapshot();
