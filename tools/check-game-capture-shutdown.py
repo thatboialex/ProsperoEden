@@ -21,8 +21,15 @@ presentation = main.index('window.CheckPresentation(')
 assert main.rfind('#ifndef PS5_NATIVE', 0, presentation) > main.rfind('#endif', 0, presentation)
 assert 'completion->wake.wait(lock, completed);' in main
 assert 'completion->return_to_menu' in main
-# Everything up to the release branch's plain wait is development-only.
-release_wait = '#else\n                        completion->wake.wait(lock, completed);\n#endif'
+# Release sampling may read CPU/atomic counters, but must never capture a frame.
+release_wait = '#else\n                        if (system.GetApplicationProcessProgramID() == 0x01006A800016E000ULL) {'
+release_branch = main.split(release_wait, 1)[1].split('#endif', 1)[0]
+assert 'window.CaptureNextFrame(' not in release_branch
+assert 'SmashPerformanceSnapshot()' in release_branch
+assert 'wake.wait_for(lock, std::chrono::seconds(5), completed)' in release_branch
+assert 'else completion->wake.wait(lock, completed);' in release_branch
+probe = (root / 'headless/smash_performance.h').read_text()
+assert 'CaptureNextFrame' not in probe and 'ReadPixels' not in probe
 assert main.count(release_wait) == 1
 development_wait = main.split('#ifdef EDEN_DEV_PROFILE\n                        for ', 1)[1].split(release_wait, 1)[0]
 assert main.count('Performance::Snapshot()') == development_wait.count('Performance::Snapshot()') == 1
