@@ -2,7 +2,12 @@
 
 ProsperoEden's existing ExeFS and RomFS mod loader can place Skyline and ARCropolis in the
 guest game. ARCropolis reads character replacements from the emulated SD card, separate from
-the game's `romfs`. **Gameplay compatibility has not been validated on ProsperoEden.**
+the game's `romfs`. **The user reports a successful full Infernape battle on PS5**
+with Smash 13.0.4, emulator runtime 6cd74e1, Skyline, ARCropolis v4.0.8,
+Smashline v1.6.6, Param Hook v13.0.4 and CSK Collection v5.0.4. The supplied
+battle logs contain no guest faults, guest exceptions or Smashline panics and
+include many presentation windows near 60 FPS, with some dips. This validates
+that reported test setup; other packs and combinations still need individual tests.
 The staging tool below prepares files; it does not implement missing guest kernel behavior,
 verify a character against a Smash update, or establish that Skyline's hooks execute correctly.
 ARCropolis's [upstream documentation](https://github.com/Raytwo/ARCropolis#work-in-progress-emulator-support)
