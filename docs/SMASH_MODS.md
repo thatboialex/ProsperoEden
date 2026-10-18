@@ -83,3 +83,20 @@ A missing SD file, failed NRO load, and guest instruction fault require differen
 Do not infer that all custom characters work from a successful test of one cosmetic pack.
 
 Host staging tests: `python3 tools/test-stage-smash-mods.py`.
+
+## Emulator hook regression
+
+The emulator now invalidates each core's cached instruction bytes when guest code flushes
+modified executable memory. Previously, translated blocks were invalidated across cores but
+a core could recompile the old bytes from its private page cache. This affects the writable
+alias and cache-flush sequence used by Skyline hooks.
+
+`tools/check-guest-hooks.py` runs two homebrew guests in the built host emulator. It checks
+a patched function on all four pinned guest cores, separate writable/executable CodeMemory
+views, process-code trampoline mappings, and clean process shutdown. The hook guest fails
+against the previous emulator and passes with the cache fix. Results, binary/fixture hashes,
+and logs are retained under `results/guest-hooks-*`. Run it after building the fixtures and
+`eden-headless`; it is also part of `make test`.
+
+These tests establish the exercised guest memory behavior. Smash **13.0.4**, Skyline,
+ARCropolis, and a specific character pack still require the console validation above.

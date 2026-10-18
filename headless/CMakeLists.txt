@@ -800,12 +800,17 @@ if(PS5_NATIVE)
     target_sources(dynarmic PRIVATE "${PORT_BUILD_DIR}/a32_interface.cpp")
 endif()
 
+include("${EDEN_PORT_DIR}/guest-code-cache.cmake")
+
 # Carry both qualified JIT configuration changes into the real core wrappers.
 # Generate local derivatives; the pinned dependency itself remains unchanged.
 get_target_property(core_sources core SOURCES)
 foreach(bits 32 64)
     set(relative "arm/dynarmic/arm_dynarmic_${bits}.cpp")
     file(READ "${PROJECT_SOURCE_DIR}/src/core/${relative}" wrapper)
+    if(bits EQUAL 64)
+        eden_guest_code_cache(wrapper)
+    endif()
     string(REPLACE "Common::PageTable::SIGN_BIT" "std::countl_zero(Common::PageTable::ATTRIBUTE_MASK)" wrapper "${wrapper}")
     # The JIT's direct page table when the process has one (headless/jit-page-table.cmake).
     set(direct_anchor "            config.page_table_sign_extension = std::uint8_t(std::countl_zero(Common::PageTable::ATTRIBUTE_MASK));\n        }\n")
