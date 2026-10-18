@@ -10,6 +10,7 @@
 #include "forwarded_launch.h"
 #include "gpu_failure.h"
 #include "guest_fault.h"
+#include "smash_performance.h"
 #include "mod_inventory.h"
 #include "mod_diagnostic_build.h"
 #include "jit_list.h"
@@ -1337,13 +1338,15 @@ int main(int argc, char** argv) {
             const auto& mods_off = switched.mods_off;
             const std::string mods = Eden::Mods::Summary(all_mods, mods_off, cheats_on);
             const bool smash_diagnostics = title == 0x01006A800016E000ULL;
+#if defined(PS5_NATIVE) && !defined(EDEN_DEV_PROFILE) && !defined(EDEN_DEV_ROM_ID)
+            Eden::Performance::timers_on = smash_diagnostics;
+#endif
             Eden::ModDiagnostics::Enable(smash_diagnostics || Eden::LoadPreferences().detailed_logging);
-            Settings::values.log_flush_line = smash_diagnostics || Eden::LoadPreferences().immediate_logs;
+            Settings::values.log_flush_line = Eden::LoadPreferences().immediate_logs;
             if (smash_diagnostics && !Eden::LoadPreferences().detailed_logging) {
                 Common::Log::Filter diagnostic_filter;
                 diagnostic_filter.ParseFilterString("*:Info Loader:Debug Service.RO:Debug Service.FS:Info Debug.Emulated:Info");
                 Common::Log::SetGlobalFilter(diagnostic_filter);
-                Settings::values.log_flush_line = true;
             }
             Eden::ModDiagnostics::Write("session", "title=" + std::string(title_id) + " mods=" + mods +
                 " backend=" + Eden::BackendName(backend) + " version=" + Eden::kAppVersion + " source=" + EDEN_DIAGNOSTIC_BUILD, true);
@@ -2029,7 +2032,13 @@ int main(int argc, char** argv) {
                             lock.lock();
                         }
 #else
-                        completion->wake.wait(lock, completed);
+                        if (smash_diagnostics) {
+                            while (!completion->wake.wait_for(lock, std::chrono::seconds(5), completed)) {
+                                lock.unlock();
+                                Eden::SmashPerformanceSnapshot();
+                                lock.lock();
+                            }
+                        } else completion->wake.wait(lock, completed);
 #endif
                     } else
 #endif

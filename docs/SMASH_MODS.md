@@ -214,3 +214,29 @@ patches in `load_and_run_plugins`; those messages alone do not prove missing fil
 The previous-session files in this upload repeat the earlier conflicting-pack run.
 They do not capture the reported pack-free black intro. Preserve that baseline in
 a separate log capture before restoring packs, rather than relying on rotated logs.
+
+## Focused performance diagnostics
+
+The framework-only capture still drops below 1 FPS, so character-pack content is not
+required to reproduce the slowdown. All four framework plugins finish initialization.
+Shader-cache loading finishes in about 25 seconds. The journal records 3916 events
+(2603 engine warnings and 1270 guest debug messages) over its first 162 seconds;
+frame progression continues after the journal quiets. These logs do not establish
+which plugin or renderer operation dominates the later frame time.
+
+The performance candidate batches normal journal records through the existing
+one-second log flusher. Producers can append while storage writes a batch. A
+256 KiB pending threshold applies backpressure by flushing; records are not silently
+dropped. Faults and durable startup markers drain prior records and fsync. Explicit
+Write logs at once still selects immediate writes. Buffered native-signal/power-loss
+tails can lose about a second of normal journal records, or longer if storage is
+stalled; this differs from a guest fault's synchronous drain.
+
+Smash no longer forces every engine log line to flush. Every five seconds, release
+Smash sessions append cumulative performance counters for JIT compilation, storage,
+draw/dispatch and GPU producer waits, plus journal records/batches/bytes/I/O time.
+`heap.log` includes timestamped CPU owner samples; stale or unsupported CPU samples
+are explicitly marked and must not be read as zero load. Counters overlap and must
+be differenced between snapshots, not summed into a CPU/GPU utilization percentage.
+Focused timing adds clock reads on measured paths. This candidate needs hardware
+comparison; no PS5 speedup or black-screen fix has been established.

@@ -10,6 +10,7 @@
 // "Write logs at once" has every line written as it comes, as before: stderr unbuffered, stdout
 // by lines, and games stutter again.
 #pragma once
+#include "mod_diagnostics.h"
 #include <chrono>
 #include <condition_variable>
 #include <cstdio>
@@ -27,6 +28,7 @@ public:
     // The streams must already write to their log files. At once: every line is written as it
     // comes, with no thread.
     bool Start(bool at_once = false) {
+        ModDiagnostics::SetImmediate(at_once);
         static char stderr_buffer[64 * 1024], stdout_buffer[64 * 1024];
         if (worker.joinable()) return true;
         if (at_once)
@@ -41,7 +43,7 @@ public:
 
     // Writes out what is buffered; the streams stay buffered.
     void Stop() {
-        if (!worker.joinable()) return;
+        if (!worker.joinable()) { ModDiagnostics::Flush(); return; }
         {
             std::lock_guard lock{mutex};
             stopping = true;
@@ -59,6 +61,7 @@ private:
             }
             std::fflush(stderr);
             std::fflush(stdout);
+            ModDiagnostics::Flush();
         }
     }
 
