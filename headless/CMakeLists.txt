@@ -1012,6 +1012,16 @@ write_derived("${PORT_BUILD_DIR}/physical_core.cpp"
 # rate is applied where Eden applies its own clock settings, and it follows the frames the
 # game hands in (BufferQueueProducer::QueueBuffer, below).
 file(READ "${PROJECT_SOURCE_DIR}/src/core/core_timing.cpp" core_timing_source)
+# Publish the stop request before waking either wait. Otherwise the timing thread can
+# consume the wake, re-enter Wait(), and leave Reset permanently blocked in join().
+set(timing_stop_old "    paused = true;\n    pause_event.Set();\n    event.Set();\n    if (timer_thread.joinable()) {\n        timer_thread.request_stop();\n        timer_thread.join();\n    }")
+string(FIND "${core_timing_source}" "${timing_stop_old}" timing_stop_at)
+if(timing_stop_at LESS 0)
+    message(FATAL_ERROR "Pinned CoreTiming::Reset changed")
+endif()
+string(REPLACE "${timing_stop_old}"
+    "    paused = true;\n    if (timer_thread.joinable()) {\n        timer_thread.request_stop();\n    }\n    pause_event.Set();\n    event.Set();\n    if (timer_thread.joinable()) {\n        timer_thread.join();\n    }"
+    core_timing_source "${core_timing_source}")
 set(guest_clock_old "    if (::Settings::values.sync_core_speed.GetValue()) {")
 string(FIND "${core_timing_source}" "${guest_clock_old}" guest_clock_at)
 if(guest_clock_at LESS 0)

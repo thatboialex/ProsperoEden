@@ -103,3 +103,9 @@ and logs are retained under `results/guest-hooks-*`. Run it after building the f
 
 These tests establish the exercised guest memory behavior. Smash **13.0.4**, Skyline,
 ARCropolis, and a specific character pack still require the console validation above.
+
+Guest cleanup also exposed a separate timing-thread lost wake during emulator shutdown.
+The emulator now requests that thread to stop before signaling its wait events.
+`tools/check-timing-stop.py <build-directory>` forces the old race using the generated
+reset method and the pinned event implementation, then checks the corrected method.
+The build scripts run this regression for both host and PS5 build derivatives.
